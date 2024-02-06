@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,maximum-scale=1">
+	<title>SPACE BATTLESHIP on ETH BLOCKCHAIN</title>
+	<meta name="description" content="Battleboat.js: A JavaScript AI that beats humans at battleship.">
+	<meta name="keywords" content="Battleboat.js, battleship, AI, robot, JavaScript">
+	<meta name="google" content="notranslate">
+	<link rel="icon" type="image/png" href="./images/favicon.png" />
+	<link rel="image_src" href="img/apple-touch-icon-144x144-precomposed.png" />
+	<link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
+	<link rel="apple-touch-icon-precomposed" href="img/apple-touch-icon-precomposed.png" />
+	<link rel="apple-touch-icon-precomposed" sizes="57x57" href="img/apple-touch-icon-57x57-precomposed.png" />
+	<link rel="apple-touch-icon-precomposed" sizes="72x72" href="img/apple-touch-icon-72x72-precomposed.png" />
+	<link rel="apple-touch-icon-precomposed" sizes="114x114" href="img/apple-touch-icon-114x114-precomposed.png" />
+	<link rel="apple-touch-icon-precomposed" sizes="144x144" href="img/apple-touch-icon-144x144-precomposed.png" />
+
+
+	<link href="./css/style.css"  rel="stylesheet" media="all"/>
+	<style>
+		#second-page {
+            display: none;
+        }
+	</style>
+
+</head>
+<body>
+<div id="clock"></div>
+<div class="container">
+	<h2>SPACE BATTLESHIP ON ETH BLOCKCHAIN</h2>
+	<p class="tagline" id="wallet-info">Wallet info:</p>
+    <p class="tagline" id="game-info"><strong>Match ID</strong>:...</p>
+    <p class="tagline" id="betted-info"><strong>ETH amount </strong>:...</p>
+	<div id="modalContainer"></div>
+
+	<div id="welcome-page">
+		<h1>WELCOME TO SPACE BATTLESHIP</h1>
+		<p>Let's play with Rick and Morty in a battleship game on ETH blockchain!</p>
+		<div id="welcome-buttons">
+			<button id="exit-button">Exit</button>
+			<button id="access-page-button">Play!</button>
+		</div>
+	</div>
+<div id="second-page">
+	<div class="container-init">
+
+        <div id="buttons-init">
+          <button id="newGameBtn">New game </button>
+          <button id="joinByIdBtn">Join by id</button>
+          <button id="joinRandomBtn">Radom game</button>
+        </div>
+        <div id="formContainer" class="hidden">
+          <form id="betForm">
+            <input type="number" id="ethAmount" step="0.01" placeholder="Propose ETH to bet" required>
+            <input type="submit" value="Propose" id="send-proposal">
+          </form>
+        </div>
+        <div id="opponentProposal" class="hidden">
+         <p>Current proposal: <span id="yourProposalText"></span></p>
+          <input type="submit" value="Accept proposal" id="accept-proposal">
+    
+        </div>
+    
+    
+        <div id="joinByIdForm" class="hidden">
+          <form id="joinByIdForm">
+            <input type="text" id="gameId" placeholder="Insert game ID" required>
+            <input type="submit" value="Join" id="join-game">
+          </form>
+        </div>
+    
+    
+        <div id="searchingGame" class="hidden">
+          <p>Searching random game to join...</p>
+        </div>
+      </div>
+	
+   
+	<ol class="instructions">
+		<li id="step1">Decide the amount of ETH to bet with the opponent</li>
+		<li id="step2">Place your ships on your map</li>
+		<li id="step3">Click on the cells of the enemy's map to find and destroy the enemy ships</li>
+		<li id="step4">The opponent will fire on your ships</li>
+		<li id="step5">At each turn, <i>before attack</i>, submit the <strong>proof</strong> to prove that you're not cheating</li>
+	</ol>
+
+	<div class="game-container" id="game-container" hidden>
+		<div id="restart-sidebar" class="hidden">
+			<h2>Try Again</h2>
+			<button id="restart-game">New Match</button>
+		</div><div id="roster-sidebar">
+			<h2>Place Your Ships</h2>
+			<ul class="fleet-roster">
+				<li id="patrolboat">Asmov's ship</li>
+				<li id="submarine">Wormhole craft</li>
+				<li id="destroyer">Destroyer</li>
+				<li id="battleship">Deathstar</li>
+				<li id="carrier">Warship</li>
+			</ul>
+			<button id="rotate-button" data-direction="0">Rotate Ship</button>
+			<button id="start-game" class="hidden">Start Match</button>
+			<button id="place-randomly" class="hidden">Place Randomly and Start</button>
+		</div>
+		<div id="stats-sidebar">
+			<h2>Report opponent</h2>
+			
+			<input type="submit" value="Report" id="report-button">
+		</div>
+		<div class="grid-container">
+			<h2>Your Fleet</h2>
+			<div class="grid human-player" id="humanGrid"><span class="no-js">Please enable JavaScript to play this game</span></div>
+		</div>
+		<div class="grid-container">
+			<h2>Enemy Fleet</h2>
+			<div class="grid computer-player" id="computerGrid"><span class="no-js">Please enable JavaScript to play this game</span></div>
+		</div>
+	</div>
+</div>	
+</div>
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MDXLY4NGC1"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/merkletreejs@latest/merkletree.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.all.min.js"></script>
+
+  
+
+<script>
+// Don't change this variable.
+var DEBUG_MODE = localStorage.getItem('DEBUG_MODE') === 'true';
+// To turn DEBUG_MODE on, run `setDebug(true);` in the console.
+if (!DEBUG_MODE) {
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MDXLY4NGC1');
+}
+
+</script>
+<script type="module">
+	import web3Utils from 'https://cdn.jsdelivr.net/npm/web3-utils@3.0.0-rc.0/+esm';
+
+	window.addEventListener('DOMContentLoaded', () => {
+  window.web3Utils = web3Utils;
+
+});
+	</script> 
+<script src="./js/clock.js"></script>
+<script src="js/web3.min.js"></script>
+<script type="module" src="js/truffle-contract.js"></script> 
+<script src="./js/battleboat.js"></script>
+<script>
+	// Script per gestire la transizione tra le pagine
+document.addEventListener("DOMContentLoaded", function () {
+    // Riferimenti agli elementi
+    var welcomePage = document.getElementById("welcome-page");
+    var accessPageButton = document.getElementById("access-page-button");
+    var secondPage = document.getElementById("second-page");
+	var exitButton = document.getElementById("exit-button");
+    // Gestore dell'evento clic sul bottone "Accedi a questa Pagina"
+    accessPageButton.addEventListener("click", function () {
+        // Nascondi la pagina di benvenuto
+        welcomePage.style.display = "none";
+        // Mostra la seconda pagina
+        secondPage.style.display = "block";
+    });
+	exitButton.addEventListener("click", function () {
+        // Chiudi la finestra solo se la finestra è stata aperta tramite JavaScript
+        if (window.location.href.startsWith("http")) {
+            window.close();
+        } else {
+            console.log("Impossibile chiudere la finestra. Potrebbe essere stata aperta manualmente.");
+        }
+    });
+});
+</script>
+<span class="prefetch" id="prefetch1"></span>
+<span class="prefetch" id="prefetch2"></span>
+<span class="prefetch" id="prefetch3"></span>
+</body>
+</html>

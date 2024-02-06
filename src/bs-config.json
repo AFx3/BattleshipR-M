@@ -1,0 +1,11 @@
+{
+  "server": {
+    "baseDir": ["./src", "./build/contracts"]
+  },
+  "gameParam":{
+    "boardSize": 10,
+    "numberOfShips": 17
+  },
+  "ghostMode": false
+  
+}
