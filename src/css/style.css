@@ -269,7 +269,7 @@ input[type=button], input[type=submit], input[type=reset] {
 	padding: 5px;
 	height: 420px;
 	width: 420px;
-	background-color: #2778c4;
+	background-color: #2bec28;
 	-webkit-border-radius: 5px;
 	-moz-border-radius: 5px;
 	border-radius: 5px;
@@ -282,7 +282,7 @@ input[type=button], input[type=submit], input[type=reset] {
 		height: 300px;
 		margin: 100px auto;
 		display: inline-block;
-		color: #EEEEEE;
+		color: #9efe8d;
 		font-size: 2em;
 	}
 	.grid-cell {
@@ -290,7 +290,7 @@ input[type=button], input[type=submit], input[type=reset] {
 		height: 40px;
 		width: 40px;
 		display: inline-block;
-		background-color: #99C2E1;
+		background-color: #9efe8d;
 		margin: 1px;
 		-webkit-border-radius: 2px;
 		-moz-border-radius: 2px;
@@ -298,16 +298,16 @@ input[type=button], input[type=submit], input[type=reset] {
 	}
 		.grid-cell:hover {
 			cursor: pointer; /* Fallback for IE */
-			background-color: #66A3D2;
+			background-color: #0cd209;
 		}
 		.human-player .grid-cell:hover {
-			background-color: #99C2E1;
+			background-color: #0cd209;
 		}
 		.computer-player .grid-cell:hover, .computer-player:hover {
 			cursor: url('../images/crosshair.png') 16 16, crosshair;
 		}
 	.grid-ship, .human-player .grid-ship:hover {
-		background-color: #808080;
+		background-color: #000000;
 	}
 	.grid-miss, .grid-miss:hover, .human-player .grid-miss:hover {
 		background-color: #FFFFFF;
