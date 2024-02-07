@@ -1,13 +1,13 @@
-
-var matchID = null;
-var ethStake = null;
-var boardSize = 10; //Fixed board dimension
-var merkleTreeLevels = [];
-var numberOfShips = 17; //Fixed number of ships
-var playerShipsNumber = null;
-var attackedRow = null;
-var attackedCol = null;
-var enemyHittedPos = new Set();
+// Set game variables
+var matchID = null;                 // Ientifier of the match
+var ethStake = null;                // Amount of ETH staked
+var boardSize = 10;                 // 10x10 grid
+var merkleTreeLevels = [];          // Array for Merkle Tree
+var numberOfShips = 17;             // Ships
+var playerShipsNumber = null;       // actual #ships of the player
+var attackedRow = null;             // Row of the attacked cell
+var attackedCol = null;             // Column of the attacked cell
+var enemyHittedPos = new Set();     // Set of cells hitted positions by the enemy player
 const data = {};
 const gasFile = "gas_analysis.json";
 
@@ -17,7 +17,7 @@ var playerGrid = null;
 var computerGrid = null;
 var humanFleet = null;
 var computerFleet = null;
-var merkleTreeLevels = [];
+//var merkleTreeLevels = [];
 var merkleRoot = null;
 
 
