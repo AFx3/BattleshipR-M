@@ -5,7 +5,7 @@ contract Battleship {
 
 
     // Struct to represent a match between two players
-    struct Match {
+    struct Battle {
         address playerX;             // Address of player A
         address playerY;             // Address of player B
         bool joinableMatch;          // Indicates whether the match is joinable
@@ -28,7 +28,7 @@ contract Battleship {
 
     modifier validMatch(uint _matchID) {
         // Ensure the provided match ID is within valid range
-        require(_matchID < matchList.length, "Invalid match ID");
+        require(_matchID < gamesArray.length, "Invalid match ID");
         _;
     }
 
@@ -36,7 +36,7 @@ contract Battleship {
 
     modifier onlyPlayer(uint _matchID) {
         // Ensure the sender is one of the players in the specified match
-        require(matchList[_matchID].playerX == msg.sender || matchList[_matchID].playerY == msg.sender, "Unauthorized player");
+        require(gamesArray[_matchID].playerX == msg.sender || gamesArray[_matchID].playerY == msg.sender, "Unauthorized player");
         _;
     }
 
@@ -44,14 +44,14 @@ contract Battleship {
 
     modifier notAccused(uint _matchID) {
         // Ensure the sender is not the accused opponent in the specified match
-        require(matchList[_matchID].accusedOpponent != msg.sender, "Cannot accuse opponent again");
+        require(gamesArray[_matchID].accusedOpponent != msg.sender, "Cannot accuse opponent again");
         _;
     }
 
 
     modifier matchNotStarted(uint _matchID) {
         // Ensure both players have provided their merkle roots, indicating match start
-        require(matchList[_matchID].startedMatch == true, "Match not started");
+        require(gamesArray[_matchID].startedMatch == true, "Match not started");
         _;
     }
 
@@ -69,19 +69,19 @@ contract Battleship {
 
     modifier stakeNotSet(uint _matchID) {
         // Ensure the stake for the specified match has not been set yet
-        require(matchList[_matchID].stake == 0, "Stake already set");
+        require(gamesArray[_matchID].stake == 0, "Stake already set");
         _;
     }
 
     modifier temporaryStakeSet(uint _matchID) {
         // Ensure the temporary stake for the specified match has been set
-        require(matchList[_matchID].stakeProposal > 0, "Temporary stake not set");
+        require(gamesArray[_matchID].stakeProposal > 0, "Temporary stake not set");
         _;
     }
 
     modifier shipsNotSunk(uint _matchID) {
         // Ensure at least one player has sunk all their ships in the specified match
-        require(matchList[_matchID].NumShipsX <= 0 || matchList[_matchID].NumShipsY <= 0, "Ships not sunked by any player");
+        require(gamesArray[_matchID].NumShipsX <= 0 || gamesArray[_matchID].NumShipsY <= 0, "Ships not sunked by any player");
         _;
     }
  
@@ -125,10 +125,10 @@ contract Battleship {
 
     
     //Array of matches
-    Match[] public matchList;
+    Battle[] public gamesArray;
 
     // Count of active matches
-    uint public activeMatchesCount=0;
+    uint public currentGames=0;
 
 
 
@@ -136,8 +136,8 @@ contract Battleship {
     function NewMatch(uint _boardSize, uint _numberOfShips) public validSize(_boardSize) {
         // Create a new Match and push it to the matchList array
         // The Match constructor initializes various properties of the match
-        matchList.push(
-            Match(
+        gamesArray.push(
+            Battle(
                 msg.sender,          // Player 1 (creator)
                 address(0),          // Player 2 (not set yet)
                 true,                // Match is joinable
@@ -160,18 +160,18 @@ contract Battleship {
         );
 
         // Increment the count of open games
-        activeMatchesCount++;
+        currentGames++;
 
         // Emit an event to indicate the creation of a new match
-        emit UintOutput(msg.sender, matchList.length-1);
+        emit UintOutput(msg.sender, gamesArray.length-1);
     }
 
 
  
     function JoinMatch(uint _matchID) validMatch(_matchID) public {
 
-        Match storage matchIstance = matchList[_matchID];
-        require(activeMatchesCount > 0, "No available matches!");
+        Battle storage matchIstance = gamesArray[_matchID];
+        require(currentGames > 0, "No available matches!");
 
         uint returnIndex = _matchID;
 
@@ -182,7 +182,7 @@ contract Battleship {
 
         matchIstance.joinableMatch = false;
         matchIstance.playerY = msg.sender;
-        activeMatchesCount--;
+        currentGames--;
 
         emit playersJoined(
             matchIstance.playerX,
@@ -196,19 +196,19 @@ contract Battleship {
 
   
     function JoinRandom() public {
-        require(activeMatchesCount > 0, "No available matches!");
+        require(currentGames > 0, "No available matches!");
 
         uint returnIndex = findJoinableMatch();
 
-        require(returnIndex < matchList.length, "No available matches!");
+        require(returnIndex < gamesArray.length, "No available matches!");
 
-        Match storage matchedGame = matchList[returnIndex];
+        Battle storage matchedGame = gamesArray[returnIndex];
         require(matchedGame.playerX != msg.sender, "You are already in this match");
 
 
         matchedGame.playerY = msg.sender;
         matchedGame.joinableMatch = false;
-        activeMatchesCount--;
+        currentGames--;
 
         emit playersJoined(
             matchedGame.playerX,
@@ -220,51 +220,22 @@ contract Battleship {
         );
     }
 
-    /**
-    * @dev Get a random index for an active match.
-    * @return A random index within the range of active matches.
-    * @notice This function generates a random index within the range of active matches
-    *         by obtaining a random value and converting it to a valid index.
-    * @dev Requires:
-    *         - The availability of an external oracle or mechanism for obtaining random values.
-    *         - The activeMatchesCount variable to be set properly.
-    */
 
-
-  
-
-
-
-    /**
- * @dev Find a joinable match based on a random index.
- * @return The index of the joinable match found or the length of the match list if no joinable match is found.
- * @notice This function searches for a joinable match based on a random index within the match list.
- *         It iterates through the match list, checking if each match is joinable.
- *         When a joinable match is found, its index is returned.
- *         If no joinable match is found, the function returns the length of the match list.
- * @dev Requires:
- *         - The availability of an external oracle or mechanism for obtaining random values.
- *         - The activeMatchesCount variable to be set properly.
- */
 function findJoinableMatch() private view returns (uint) {
     bytes32 rand = randomValue(); // Get a random value.
-    uint remainingIndex = uint(rand) % activeMatchesCount + 1; // Convert it to a valid index within the range of active matches.
+    uint remainingIndex = uint(rand) % currentGames + 1; // Convert it to a valid index within the range of active matches.
 
     // Iterate through the match list to find a joinable match.
-    for (uint i = 0; i < matchList.length; i++) {
-        if (matchList[i].joinableMatch) { // Check if the current match is joinable.
+    for (uint i = 0; i < gamesArray.length; i++) {
+        if (gamesArray[i].joinableMatch) { // Check if the current match is joinable.
             if (remainingIndex == 1) { // If the remaining index is 1, we've found the desired match.
                 return i; // Return the index of the joinable match.
             }
             remainingIndex--; // Decrement the remaining index if the current match is not joinable.
         }
     }
-    return matchList.length; // No joinable match found, return the length of the match list.
+    return gamesArray.length; // No joinable match found, return the length of the match list.
 }
-
-
-
-
 
 
     /**
@@ -283,7 +254,7 @@ function findJoinableMatch() private view returns (uint) {
     */
     function proposeStake(uint _matchID, uint _stake) public validMatch(_matchID) onlyPlayer(_matchID) stakeNotSet(_matchID) validStake(_stake) {
 
-        Match storage matchIstance = matchList[_matchID];
+        Battle storage matchIstance = gamesArray[_matchID];
         // Update temporary stake and requester for the match
         matchIstance.stakeProposal = _stake;
         matchIstance.stakeProposer = msg.sender;
@@ -306,7 +277,7 @@ function findJoinableMatch() private view returns (uint) {
     function acceptStake(uint _matchID) public validMatch(_matchID) onlyPlayer(_matchID) temporaryStakeSet(_matchID) {
         
 
-        Match storage matchIstance = matchList[_matchID];
+        Battle storage matchIstance = gamesArray[_matchID];
         require(matchIstance.stakeProposer != msg.sender, "Cannot accept your own stake");
         matchIstance.stake = matchIstance.stakeProposal;
 
@@ -332,10 +303,10 @@ function findJoinableMatch() private view returns (uint) {
         require(msg.value > 0, "Eth is 0!");
 
         // Update the corresponding player's Ether stake
-        if (matchList[_matchID].playerX == msg.sender) {
-            matchList[_matchID].stakeX += msg.value; // Use "+=" to add the sent Ether to existing balance
+        if (gamesArray[_matchID].playerX == msg.sender) {
+            gamesArray[_matchID].stakeX += msg.value; // Use "+=" to add the sent Ether to existing balance
         } else {
-            matchList[_matchID].stakeY += msg.value; 
+            gamesArray[_matchID].stakeY += msg.value; 
         }
     }
 
@@ -347,7 +318,7 @@ function findJoinableMatch() private view returns (uint) {
         */
     function attackOpponent(uint _matchID, uint256 _attackedRow, uint256 _attackedCol) public validMatch(_matchID) onlyPlayer(_matchID) {
             
-            Match storage matchIstance = matchList[_matchID];
+            Battle storage matchIstance = gamesArray[_matchID];
 
             // Check if it's the sender's turn to attack
             require(matchIstance.currentPlayerTurn == msg.sender, "Not your turn to attack");
@@ -372,7 +343,7 @@ function findJoinableMatch() private view returns (uint) {
     function registerMerkleRoot(bytes32 _merkleroot, uint _matchID) public validMatch(_matchID) onlyPlayer(_matchID) {
 
         // Get the reference to the match data using the match ID
-        Match storage matchData = matchList[_matchID];
+        Battle storage matchData = gamesArray[_matchID];
 
         // Update the appropriate player's merkle root based on the sender
         if (msg.sender == matchData.playerX) {
@@ -410,7 +381,7 @@ function findJoinableMatch() private view returns (uint) {
     */
     function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public validMatch(_matchID) onlyPlayer(_matchID) matchNotStarted(_matchID) {
 
-        Match storage matchInstance = matchList[_matchID];
+        Battle storage matchInstance = gamesArray[_matchID];
         bytes32 computedMerkleRoot = _attackHash;
         bool cheaterDetected = false;
 
@@ -499,7 +470,7 @@ function findJoinableMatch() private view returns (uint) {
     */
     function verifyBoard(uint _matchID, int256[] memory _cells) public validMatch(_matchID) onlyPlayer(_matchID) {
 
-        Match storage matchInstance = matchList[_matchID];
+        Battle storage matchInstance = gamesArray[_matchID];
         address winner;
         address loser;
         uint256 shipsNumber = 0;
@@ -553,7 +524,7 @@ function findJoinableMatch() private view returns (uint) {
 
 
         //Match finished, remove it from the list
-        delete matchList[_matchID];
+        delete gamesArray[_matchID];
     }
 
 
@@ -564,7 +535,7 @@ function findJoinableMatch() private view returns (uint) {
     */
     function accuseOpponent(uint _matchID) public validMatch(_matchID) onlyPlayer(_matchID) notAccused(_matchID) {
         
-        Match storage matchIstance = matchList[_matchID];
+        Battle storage matchIstance = gamesArray[_matchID];
         address accusedOpponent;
 
         bool timeoutExceeded = false;

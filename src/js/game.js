@@ -23,7 +23,7 @@ var merkleRoot = null;
 
 // Global Constants
 var CONST = {};
-CONST.AVAILABLE_SHIPS = ['carrier', 'battleship', 'destroyer', 'submarine', 'patrolboat'];
+CONST.AVAILABLE_SHIPS = ['asimovship', 'wormholecraft', 'destroyer', 'deathstar', 'warship'];
 // You are player 0 and the opponent is player 1
 CONST.HUMAN_PLAYER = 0;
 CONST.COMPUTER_PLAYER = 1;
@@ -63,7 +63,7 @@ App = {
       } catch (error) {
         console.error("User denied account access"); // User was denied account access
         
-        alertFire('Error', 'Contract reported error: ' + error.message, 'error', false, 0);
+        alertFire('Error', 'error contract side: ' + error.message, 'error', false, 0);
  
       }
     }
@@ -181,16 +181,16 @@ App = {
         // Handle match ID validation
         if (matchID < 0) {
           // Display error message
-          alertFire('Error', 'Something went wrong, match ID not valid!', 'error', false, 0);
+          alertFire('Error', 'Inserisci in ID valido', 'error', false, 0);
 
   
-          console.error("Something went wrong, match ID not valid!");
+          console.error("Invalid match ID");
           App.ResetGame();
         } else {
           // Update UI elements and display success message
           document.getElementById('game-info').innerText = "Match ID: " + matchID;
           
-          alertFire('Match ' + matchID + ' created!', 'Propose or wait an amount from your opponent', 'success', false, 0);
+          alertFire('The game is ready, ID:' + matchID + ' .', 'Stake or Wait', 'success', false, 0);
 
            
           App.event_loop();
@@ -199,7 +199,7 @@ App = {
       .catch(function (err) {
         // Handle contract error and display error message
         console.error(err);
-        alertFire('Error', 'Contract reported error: ' + err.message, 'error', false, 0);
+        alertFire('Error', 'Contract err: ' + err.message, 'error', false, 0);
 
       });
   },
@@ -209,7 +209,7 @@ App = {
   JoinMatchId: function (insertedGameID) {
     if (insertedGameID == null || insertedGameID == undefined || insertedGameID < 0) {
 
-      alertFire('Error', 'You must select a valid match ID!', 'error', false, 0);
+      alertFire('Error', 'invalid match ID', 'error', false, 0);
 
     } else {
       App.contracts.Battleship.deployed()
@@ -239,7 +239,7 @@ App = {
         })
         .catch(function (err) {
           console.error(err);
-          alertFire('Error', 'You must select a valid match ID!', 'error', false, 0);
+          alertFire('Error', 'need a valid match ID!', 'error', false, 0);
  
         });
     }
@@ -275,7 +275,7 @@ App = {
           App.event_loop();
         } else {
           // Display success message and update UI
-          alertFire('Match ' + matchID + ' joined!', 'The fixed betting amount is ' + window.web3Utils.fromWei(ethStake.toString()) + ' ETH', 'success', false, 0);
+          alertFire('Match ' + matchID + ' joined!', 'The price is ' + window.web3Utils.fromWei(ethStake.toString()) + ' ETH', 'success', false, 0);
   
           document.getElementById('game-info').innerText = "Match ID: " + matchID;
           App.AcceptStake();
@@ -285,7 +285,7 @@ App = {
       .catch(function (err) {
         // Handle errors and display error message
         console.error(err);
-        alertFire('Error', 'No games available, create a new one!', 'error', false, 0);
+        alertFire('Error', 'No games available now', 'error', false, 0);
    
       });
   },
@@ -299,7 +299,7 @@ App = {
     if (!ethStake || ethStake <= 0) {
         // Disable the button and show an error message
         document.getElementById('accept-proposal').disabled = true;
-        alertFire('Error', 'You must select a valid amount!', 'error', false, 0);
+        alertFire('Error', 'Format error!', 'error', false, 0);
      
         return null;
     } else {
@@ -311,7 +311,7 @@ App = {
             return battleshipInstance.proposeStake(matchID, window.web3Utils.toWei(ethStake.toString()));
         }).then(function(receipt) {
             // Display success message
-            alertFire('Stake proposed!', 'You proposed ' + ethStake + ' ETH. Wait for your opponent to accept or propose a different amount', 'success', false, 0);
+            alertFire('Stake proposed!', 'You staked ' + ethStake + ' ETH. Wait...', 'success', false, 0);
     
         }).catch(function(err) {
             console.error(err);
@@ -325,7 +325,7 @@ App = {
   AcceptStake: function() {
     if (matchID === null) {
         // Show an error message and reset the match
-        alertFire('Error', 'Something went wrong, reload page!', 'error', false, 0);
+        alertFire('Error', 'Something went wrong!', 'error', false, 0);
        
         App.ResetGame();
         return null;
@@ -361,7 +361,7 @@ App = {
     await battleshipInstance.registerMerkleRoot(merkleroot, matchID);
 
     // Show Merkle root registered message
-    alertFire('Merkle root registered!', 'Waiting for the opponent\'s merkle root registration!', 'success', false, 0);
+    alertFire('Merkle root ok!', 'Wait Rival\'s merkle root...', 'success', false, 0);
     
 
     // Start event loop
@@ -924,7 +924,7 @@ $(function () {
 
     // Global Constants
     var CONST = {};
-    CONST.AVAILABLE_SHIPS = ['carrier', 'battleship', 'destroyer', 'submarine', 'patrolboat'];
+    CONST.AVAILABLE_SHIPS = ['asimovship', 'wormholecraft', 'destroyer', 'deathstar', 'warship'];
     // You are player 0 and the computer is player 1
     // The virtual player is used for generating temporary ships
     // for calculating the probability heatmap
