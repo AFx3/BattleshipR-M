@@ -6,8 +6,8 @@ contract Battleship {
 
     // Struct to represent a match between two players
     struct Match {
-        address playerA;             // Address of player A
-        address playerB;             // Address of player B
+        address playerX;             // Address of player A
+        address playerY;             // Address of player B
         bool joinableMatch;          // Indicates whether the match is joinable
         bool startedMatch;           // Indicates whether the match has started
         uint boardSize;              // Size of the board
@@ -34,7 +34,7 @@ contract Battleship {
 
     modifier onlyPlayer(uint _matchID) {
         // Ensure the sender is one of the players in the specified match
-        require(matchList[_matchID].playerA == msg.sender || matchList[_matchID].playerB == msg.sender, "Unauthorized player");
+        require(matchList[_matchID].playerX == msg.sender || matchList[_matchID].playerY == msg.sender, "Unauthorized player");
         _;
     }
 
@@ -81,7 +81,7 @@ contract Battleship {
     }
 
     // Event to notify when players have joined the match
-    event playersJoined(address indexed _playerA,address indexed _playerB,uint _stakeTemp ,uint indexed _matchID,uint _boardSize,uint _numberOfShips);
+    event playersJoined(address indexed _playerX,address indexed _playerY,uint _stakeTemp ,uint indexed _matchID,uint _boardSize,uint _numberOfShips);
 
     // Event to propose the stake of money for the match stake
     event stakeProposal(uint indexed _matchID,uint _stake,address _proposer);
@@ -96,7 +96,7 @@ contract Battleship {
     error ErrorOut(string err);
 
     // Event to signal the official start of the match
-    event matchStarted(uint indexed _matchID, address indexed _playerA, address indexed _playerB);
+    event matchStarted(uint indexed _matchID, address indexed _playerX, address indexed _playerY);
 
     // Event to notify an attack by a player on an opponent
     event attackNotify(uint indexed _matchID ,address _attackerAddress, address _opponentAddress, uint _attackedRow, uint _attackedCol);
@@ -176,18 +176,18 @@ contract Battleship {
 
         uint returnIndex = _matchID;
 
-        require(matchIstance.playerA != address(0), "No player in this match");
-        require(matchIstance.playerB == address(0), "Both players already joined");
+        require(matchIstance.playerX != address(0), "No player in this match");
+        require(matchIstance.playerY == address(0), "Both players already joined");
         require(matchIstance.joinableMatch, "Match not joinable");
-        require(matchIstance.playerA != msg.sender, "You are already in this match");
+        require(matchIstance.playerX != msg.sender, "You are already in this match");
 
         matchIstance.joinableMatch = false;
-        matchIstance.playerB = msg.sender;
+        matchIstance.playerY = msg.sender;
         activeMatchesCount--;
 
         emit playersJoined(
-            matchIstance.playerA,
-            matchIstance.playerB,
+            matchIstance.playerX,
+            matchIstance.playerY,
             matchIstance.stakeProposal,
             returnIndex,
             matchIstance.boardSize,
@@ -206,16 +206,16 @@ contract Battleship {
         require(returnIndex < matchList.length, "No available matches!");
 
         Match storage matchedGame = matchList[returnIndex];
-        require(matchedGame.playerA != msg.sender, "You are already in this match");
+        require(matchedGame.playerX != msg.sender, "You are already in this match");
 
 
-        matchedGame.playerB = msg.sender;
+        matchedGame.playerY = msg.sender;
         matchedGame.joinableMatch = false;
         activeMatchesCount--;
 
         emit playersJoined(
-            matchedGame.playerA,
-            matchedGame.playerB,
+            matchedGame.playerX,
+            matchedGame.playerY,
             matchedGame.stakeProposal,
             returnIndex,
             matchedGame.boardSize,
@@ -330,7 +330,7 @@ contract Battleship {
         require(msg.value > 0, "Eth is 0!");
 
         // Update the corresponding player's Ether stake
-        if (matchList[_matchID].playerA == msg.sender) {
+        if (matchList[_matchID].playerX == msg.sender) {
             matchList[_matchID].ethPlayerA += msg.value; // Use "+=" to add the sent Ether to existing balance
         } else {
             matchList[_matchID].ethPlayerB += msg.value; 
@@ -354,7 +354,7 @@ contract Battleship {
             matchIstance.accusedOpponent = address(0);
             matchIstance.timeoutForAccusation = 0;
 
-            address opponent = (matchIstance.playerA == msg.sender) ? matchIstance.playerB : matchIstance.playerA;
+            address opponent = (matchIstance.playerX == msg.sender) ? matchIstance.playerY : matchIstance.playerX;
 
             // Emit the attack event and update player turn
             emit attackNotify(_matchID, msg.sender, opponent, _attackedRow, _attackedCol);
@@ -373,7 +373,7 @@ contract Battleship {
         Match storage matchData = matchList[_matchID];
 
         // Update the appropriate player's merkle root based on the sender
-        if (msg.sender == matchData.playerA) {
+        if (msg.sender == matchData.playerX) {
             matchData.merklePlayerA = _merkleroot;
         } else {
             matchData.merklePlayerB = _merkleroot;
@@ -385,7 +385,7 @@ contract Battleship {
             matchData.startedMatch = true;
 
             // Emit an event indicating that the match has started
-            emit matchStarted(_matchID, matchData.playerA, matchData.playerB);
+            emit matchStarted(_matchID, matchData.playerX, matchData.playerY);
         }
     }
 
@@ -424,7 +424,7 @@ contract Battleship {
         bytes32 playerMerkleRoot;
 
         // Determine the player's Merkle root and the number of their remaining ships.
-        if (matchInstance.playerA == msg.sender) {
+        if (matchInstance.playerX == msg.sender) {
             playerNumShips = matchInstance.playerANumShips;
             playerMerkleRoot =  matchInstance.merklePlayerA;
         } else {
@@ -438,11 +438,11 @@ contract Battleship {
 
         // If the computed Merkle root matches the player's Merkle root, process the attack.
         if (computedMerkleRoot == playerMerkleRoot) {
-            emit attackResult(_matchID, _attackResult, (msg.sender == matchInstance.playerA) ? matchInstance.playerB : matchInstance.playerA);
+            emit attackResult(_matchID, _attackResult, (msg.sender == matchInstance.playerX) ? matchInstance.playerY : matchInstance.playerX);
 
             // Handle ship destruction and updates based on the attack result.
             if (_attackResult == 1) {
-                if (msg.sender == matchInstance.playerA) {
+                if (msg.sender == matchInstance.playerX) {
                     matchInstance.playerANumShips = playerNumShips - 1;
                 } else {
                     matchInstance.playerBNumShips = playerNumShips - 1;
@@ -450,12 +450,12 @@ contract Battleship {
             }
         } else {
             // Cheating detected: update winner and loser, finish the match.
-            if (msg.sender == matchInstance.playerA) {
-                winner = matchInstance.playerB;
-                loser = matchInstance.playerA;
+            if (msg.sender == matchInstance.playerX) {
+                winner = matchInstance.playerY;
+                loser = matchInstance.playerX;
             } else {
-                winner = matchInstance.playerA;
-                loser = matchInstance.playerB;
+                winner = matchInstance.playerX;
+                loser = matchInstance.playerY;
             }
 
             matchInstance.startedMatch = false;
@@ -465,10 +465,10 @@ contract Battleship {
 
         // Check for match completion conditions and transfer rewards if applicable.
         if (matchInstance.playerANumShips <= 0 || matchInstance.playerBNumShips <= 0) {
-            if (msg.sender == matchInstance.playerA) {
-                winner = matchInstance.playerB;
+            if (msg.sender == matchInstance.playerX) {
+                winner = matchInstance.playerY;
             } else {
-                winner = matchInstance.playerA;
+                winner = matchInstance.playerX;
             }
 
             matchInstance.startedMatch = false;
@@ -504,12 +504,12 @@ contract Battleship {
         bool cheaterDetected = false;
 
         // Determine the winner and loser based on the player's remaining ships.
-        if (msg.sender == matchInstance.playerA && matchInstance.playerBNumShips <= 0) {
-            winner = matchInstance.playerA;
-            loser = matchInstance.playerB;
-        } else if (msg.sender == matchInstance.playerB && matchInstance.playerANumShips <= 0) {
-            winner = matchInstance.playerB;
-            loser = matchInstance.playerA;
+        if (msg.sender == matchInstance.playerX && matchInstance.playerBNumShips <= 0) {
+            winner = matchInstance.playerX;
+            loser = matchInstance.playerY;
+        } else if (msg.sender == matchInstance.playerY && matchInstance.playerANumShips <= 0) {
+            winner = matchInstance.playerY;
+            loser = matchInstance.playerX;
         } else {
             revert("Error: there is no winner!");
         }
@@ -570,10 +570,10 @@ contract Battleship {
         address loser;
 
         // Determine the accused opponent based on the sender
-        if (matchIstance.playerB == msg.sender) {
-            accusedOpponent = matchIstance.playerA;
+        if (matchIstance.playerY == msg.sender) {
+            accusedOpponent = matchIstance.playerX;
         } else {
-            accusedOpponent = matchIstance.playerB;
+            accusedOpponent = matchIstance.playerY;
         }
 
         // Handle timeout scenario
@@ -582,12 +582,12 @@ contract Battleship {
             if (block.number >= matchIstance.timeoutForAccusation) {
                 // Determine the winner and transfer ETH accordingly
 
-                if (matchIstance.accusedOpponent == matchIstance.playerB) {
-                    winner = matchIstance.playerA;
-                    loser = matchIstance.playerB;
+                if (matchIstance.accusedOpponent == matchIstance.playerY) {
+                    winner = matchIstance.playerX;
+                    loser = matchIstance.playerY;
                 } else {
-                    winner = matchIstance.playerB;
-                    loser = matchIstance.playerA;
+                    winner = matchIstance.playerY;
+                    loser = matchIstance.playerX;
                 }
 
                 timeoutExceeded = true;

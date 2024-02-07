@@ -679,11 +679,11 @@ App = {
             break;
             case "matchStarted":
 
-                if(events.args._playerA == web3.eth.defaultAccount || events.args._playerB == web3.eth.defaultAccount){
+                if(events.args._playerX == web3.eth.defaultAccount || events.args._playerY == web3.eth.defaultAccount){
 
                     lastBlock = events.blockNumber;
 
-                    if (events.args._playerA == web3.eth.defaultAccount) {
+                    if (events.args._playerX == web3.eth.defaultAccount) {
                       alertFire('Match started, it\'s your turn!', '', 'info', true, 0);
                  
           
