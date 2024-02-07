@@ -172,7 +172,7 @@ input[type=button], input[type=submit], input[type=reset] {
 .tagline {
 	margin-bottom: 0.5em;
 }
-	.instructions {
+	.flow {
 		width: auto;
 		display: inline-block;
 		text-align: left;
@@ -210,6 +210,15 @@ input[type=button], input[type=submit], input[type=reset] {
 			margin: 0 0 1em 0;
 			text-align: center;
 		}
+
+
+
+
+
+
+
+
+
 
 .fleet-roster {
 	position: relative;
