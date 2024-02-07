@@ -587,10 +587,7 @@ function findJoinableMatch() private view returns (uint) {
     }
 
 
-    /**
-    * @dev Generates a pseudo-random value based on the current block hash.
-    * @return A pseudo-random bytes32 value.
-    */
+   /*
     function randomValue() private view returns (bytes32) {
         // Retrieve the block hash of the previous block
         bytes32 previousBlockHash = blockhash(block.number - 1);
@@ -606,9 +603,16 @@ function findJoinableMatch() private view returns (uint) {
 
         return randValue;
     }
-
-
-
+*/
+    /**
+        * @dev Generates a pseudo-random value based on the current block hash.
+        * @return A pseudo-random bytes32 value.
+    */
+    function randomValue() private view returns (bytes32) {
+        // Utilizza l'hash del blocco corrente e il numero casuale della beacon chain
+        bytes32 randValue = keccak256(abi.encodePacked(blockhash(block.number), block.timestamp, block.basefee));
+        return randValue;
+    }
 }
 
 
