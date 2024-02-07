@@ -32,17 +32,22 @@ contract Battleship {
         _;
     }
 
+
+
     modifier onlyPlayer(uint _matchID) {
         // Ensure the sender is one of the players in the specified match
         require(matchList[_matchID].playerX == msg.sender || matchList[_matchID].playerY == msg.sender, "Unauthorized player");
         _;
     }
 
+
+
     modifier notAccused(uint _matchID) {
         // Ensure the sender is not the accused opponent in the specified match
         require(matchList[_matchID].accusedOpponent != msg.sender, "Cannot accuse opponent again");
         _;
     }
+
 
     modifier matchNotStarted(uint _matchID) {
         // Ensure both players have provided their merkle roots, indicating match start
@@ -79,6 +84,10 @@ contract Battleship {
         require(matchList[_matchID].playerANumShips <= 0 || matchList[_matchID].playerBNumShips <= 0, "Ships not sunked by any player");
         _;
     }
+ 
+
+
+
 
     // Event to notify when players have joined the match
     event playersJoined(address indexed _playerX,address indexed _playerY,uint _stakeTemp ,uint indexed _matchID,uint _boardSize,uint _numberOfShips);
@@ -127,11 +136,14 @@ contract Battleship {
     }
 
 
-    /**
-    * @dev Creates a new match.
-    * @param _boardSize The dimension of the board.
-    * @param _numberOfShips The number of ships in the match.
-    */
+    
+
+
+
+
+
+
+
     function NewMatch(uint _boardSize, uint _numberOfShips) public validSize(_boardSize) {
         // Create a new Match and push it to the matchList array
         // The Match constructor initializes various properties of the match
@@ -165,10 +177,8 @@ contract Battleship {
         emit UintOutput(msg.sender, matchList.length-1);
     }
 
-    /**
-    * @dev Join a specific match by index.
-    * @param _matchID The index of the match to join.
-    */
+
+ 
     function JoinMatch(uint _matchID) validMatch(_matchID) public {
 
         Match storage matchIstance = matchList[_matchID];
@@ -195,9 +205,7 @@ contract Battleship {
         );
     }
 
-    /**
-    * @dev Join a random available match.
-    */
+  
     function JoinRandom() public {
         require(activeMatchesCount > 0, "No available matches!");
 

@@ -50,7 +50,7 @@ h1, h2, h3, h4, h5, h6, p, li, span {
 
 #exit-button:active,
 #access-page-button:active {
-    background-color: #99C2E1;
+    background-color: #2bec28;
 }
 #clock {
     position: fixed;
@@ -210,12 +210,6 @@ input[type=button], input[type=submit], input[type=reset] {
 			margin: 0 0 1em 0;
 			text-align: center;
 		}
-
-
-
-
-
-
 
 
 
