@@ -2,29 +2,21 @@
 var matchID = null;                 // Ientifier of the match
 var ethStake = null;                // Amount of ETH staked
 var boardSize = 10;                 // 10x10 grid
+var merkleRoot = null;              // store Merkle Root
 var merkleTreeLevels = [];          // Array for Merkle Tree
 var numberOfShips = 17;             // Ships
 var playerShipsNumber = null;       // actual #ships of the player
+var playerGrid = null;
+var computerGrid = null;
+var humanFleet = null;
+var computerFleet = null;
 var attackedRow = null;             // Row of the attacked cell
 var attackedCol = null;             // Column of the attacked cell
 var enemyHittedPos = new Set();     // Set of cells hitted positions by the enemy player
 const data = {};
 const gasFile = "gas_analysis.json";
-
-
-//Global variables to manage UI and logic
-var playerGrid = null;
-var computerGrid = null;
-var humanFleet = null;
-var computerFleet = null;
-//var merkleTreeLevels = [];
-var merkleRoot = null;
-
-
-// Global Constants
 var CONST = {};
 CONST.AVAILABLE_SHIPS = ['asimovship', 'wormholecraft', 'destroyer', 'deathstar', 'warship'];
-// You are player 0 and the opponent is player 1
 CONST.HUMAN_PLAYER = 0;
 CONST.COMPUTER_PLAYER = 1;
 // Possible values for the parameter `type` (string)
@@ -41,72 +33,90 @@ CONST.TYPE_HIT = 3; // 3 = damaged ship (hit shot)
 CONST.TYPE_SUNK = 4; // 4 = sunk ship
 
 
-//Battleship Web3: manage contract interactions and UI update
+// Define APP object to manage interactions between the UI and the contract
 App = {
+  // provider Web3
+  web3Provider: null, 
+  contracts: {}, // game's contracts
 
-  web3Provider: null,
-  contracts: {},
-
-
+  // initialize the app
   init: async function () {
     return await App.initWeb3();
   },
-
+  
+  // initialize web3 provider
   initWeb3: async function () {
 
-    //in order to interact between the interface and the contract, it checks where the web3js library is.
+    // check if winow.ethereum is available to use Metamask
     if (window.ethereum) {
-      App.web3Provider = window.ethereum;
+      App.web3Provider = window.ethereum; // Set the Web3 provider as winow.ethereum
       try {
-        await window.ethereum.enable(); // Request account access
+        // Send a request to the user to enable Metamask account
+        await window.ethereum.enable(); 
 
       } catch (error) {
-        console.error("User denied account access"); // User was denied account access
-        
+        console.error("User denied account access"); 
         alertFire('Error', 'error contract side: ' + error.message, 'error', false, 0);
  
       }
     }
     else if (window.web3) {
-      App.web3Provider = window.web3.currentProvider;
+      App.web3Provider = window.web3.currentProvider; //use web3 provider
     }
     else {
-      App.web3Provider = new Web3.providers.HttpProvider("http://localhost:7545");
+      App.web3Provider = new Web3.providers.HttpProvider("http://localhost:7545"); // fallback to local provider
     }
+
+
+    // create web3 instance with the provider available
     web3 = new Web3(App.web3Provider);
   
-
+    // set the default account on Metamask
     web3.eth.defaultAccount = web3.eth.accounts[0];
+
+    // get connected wallet address
     document.getElementById('wallet-info').innerText = "Connected wallet: " + web3.eth.defaultAccount;
    
+    // log the wallet address
     console.log("[INIT] Wallet address: ", web3.eth.defaultAccount);
+
+    // load parameters game
     loadParam();
     return App.initContract();
   },
 
+  // SMART CONTRACT INITIALIZATION
+
   initContract: function () {
     $.getJSON("Battleship.json", function (data) {
-      BattleshipArtifact = data; // Get the contract artifact and  initialize it
-      App.contracts.Battleship = TruffleContract(BattleshipArtifact);
-      // Set the web3.js provider for our contract to the provider defined in the previous function
-      App.contracts.Battleship.setProvider(App.web3Provider);
-      // Use the contract to retrieve and mark the adopted pets
+      // Get the necessary contract artifact file and instantiate it with truffle-contract
+      BattleshipArtifact = data; 
 
+      // initialize the contract
+      App.contracts.Battleship = TruffleContract(BattleshipArtifact);
+
+      // Set the web3 provider for the contract
+      App.contracts.Battleship.setProvider(App.web3Provider);
     });
 
     return App.registerUIevents();
   },
 
+
+  // define async funtion to manage the events related to UI
+  // so all the event handlers
   registerUIevents: async function () {
     
-
+    // event when HTML doc is loaded
     $(document).ready(function() {
+      // event: when the user clicks on the new game button, call the NewMatch function to set up a new game
         $("#newGameBtn").click(function() {
           App.NewMatch();
           showFormAndProposal("waiting...");
 
-        });
-      
+        }); 
+        
+        // event: when the user clicks on the join by ID button, show the form to insert the match ID
         $("#joinByIdBtn").click(function() {
           $("#buttons").hide();
           $("#formContainer").hide();
@@ -115,6 +125,7 @@ App = {
           $("#searchingGame").hide();
         });
       
+        // event: when the user clicks on the join random button, call the JoinRandomGame function to join a random game
         $("#joinRandomBtn").click(function() {
           $("#buttons").hide();
           $("#formContainer").hide();
@@ -125,11 +136,9 @@ App = {
 
         });
       
-    
-
+        // event user send a stake proposal, and call CommitStake() to confirm the stake
         $("#betForm").submit(function (event) {
             event.preventDefault();
-        
             App.CommitStake();
             ethAmount = $("#ethAmount").val();
            $("#yourProposalText").text(`${ethAmount} ETH`);
@@ -137,14 +146,15 @@ App = {
            $("#accept-proposal").prop("disabled", true);
 
           });
-      
+          
+          // event to join via match ID
           $("#joinByIdForm").submit(function (event) {
             event.preventDefault();
             const matchID = $("#gameId").val();
             App.JoinMatchId(matchID);
           });
 
-           // Event handler for the "Accept proposal" button
+           // event for the "Accept proposal" button
             $("#accept-proposal").click(function () {
                 App.AcceptStake();
             });
@@ -152,6 +162,7 @@ App = {
           
       });
       
+      // function to show the form and the proposal on UI
       function showFormAndProposal(opponentProposal) {
         $("#accept-proposal").prop("disabled", true);
         $("#buttons-init").hide();
@@ -164,13 +175,17 @@ App = {
    },
 
 
+   // I Have 3 cases: join by ID, join random, and new game
+
+   // 1st function to create a NEW MATCH
    NewMatch: function () {
-    // Deploy the Battleship contract instance
+    // 1) Deploy the contract instance
     App.contracts.Battleship.deployed()
       .then(async function (instance) {
+
         // Get the deployed contract instance
         battleshipInstance = instance;
-        // Call the NewMatch function on the contract
+        // Call the NewMatch function on the contract to set up the new Match ID
         return battleshipInstance.NewMatch(boardSize, numberOfShips);
       })
       .then(async function (receipt) {
@@ -204,46 +219,8 @@ App = {
       });
   },
   
+  // 2nd function to join game randomly
 
-
-  JoinMatchId: function (insertedGameID) {
-    if (insertedGameID == null || insertedGameID == undefined || insertedGameID < 0) {
-
-      alertFire('Error', 'invalid match ID', 'error', false, 0);
-
-    } else {
-      App.contracts.Battleship.deployed()
-        .then(function (instance) {
-          battleshipInstance = instance;
-          return battleshipInstance.JoinMatch(insertedGameID);
-        })
-        .then(function (receipt) {
-          console.log("[JoinMatchId " + matchID + "] Initial stake:", ethStake);
-          matchID = insertedGameID;
-          ethStake = receipt.logs[0].args._stakeTemp.toNumber();
-          boardSize = receipt.logs[0].args._boardSize.toNumber();
-          numberOfShips = receipt.logs[0].args._numberOfShips.toNumber();
-          playerShipsNumber = numberOfShips;
-  
-          $("#opponentProposal").show();
-  
-          document.getElementById("yourProposalText").style.color = "red";
-          document.getElementById('accept-proposal').disabled = !(ethStake && ethStake > 0);
-          $("#yourProposalText").text(" " + window.web3Utils.fromWei(ethStake.toString()) + " ETH");
-  
-          $("#joinByIdForm").hide();
-          $("#buttons-init").hide();
-          $("#formContainer").show();
-          $("#game-info").text("Match ID: " + matchID);
-          App.event_loop();
-        })
-        .catch(function (err) {
-          console.error(err);
-          alertFire('Error', 'need a valid match ID!', 'error', false, 0);
- 
-        });
-    }
-  },
   JoinRandomGame: function () {
     // Deploy the Battleship contract instance
     App.contracts.Battleship.deployed()
@@ -254,7 +231,7 @@ App = {
         return battleshipInstance.JoinRandom();
       })
       .then(function (receipt) {
-        // Extract relevant information from the receipt
+        // Extract infos from recepit
         const log = receipt.logs[0];
         matchID = log.args._matchID.toNumber();
         ethStake = log.args._stakeTemp.toNumber();
@@ -265,19 +242,36 @@ App = {
         // Log initial stake and update UI
         console.log("[JoinRandomGame " + matchID + "] Initial stake:", ethStake);
         if (ethStake === null || ethStake <= 0) {
+
+          //show the rival proposal
           $("#opponentProposal").show();
+
+          // set red as others when there is a different stake
           document.getElementById("yourProposalText").style.color = "red";
+
+          // disable the button if the proposal is not valid (null, <0)
           document.getElementById('accept-proposal').disabled = ethStake === null || ethStake <= 0;
+
+          // update the stake proposal with the amount converted from wei to eth
           $("#yourProposalText").text(" " + window.web3Utils.fromWei(ethStake.toString()) + " ETH");
+
+          // hide unuseful objects form the UI
           $("#joinByIdForm, #buttons-init").hide();
+
+          // show the proposal on the UI
           $("#formContainer").show();
+          // update the game ID to the UI
           $("#game-info").text("Match ID: " + matchID);
+
+          // start the event loop
           App.event_loop();
+
         } else {
           // Display success message and update UI
           alertFire('Match ' + matchID + ' joined!', 'The price is ' + window.web3Utils.fromWei(ethStake.toString()) + ' ETH', 'success', false, 0);
-  
+          // Update UI elements
           document.getElementById('game-info').innerText = "Match ID: " + matchID;
+
           App.AcceptStake();
           App.event_loop();
         }
@@ -289,9 +283,77 @@ App = {
    
       });
   },
+
+
+  // define function to join a match by id
+  JoinMatchId: function (insertedGameID) {
+    // check if match ID is valid
+    if (insertedGameID == null || insertedGameID == undefined || insertedGameID < 0) {
+
+      alertFire('Error', 'invalid match ID', 'error', false, 0);
+
+    } else {
+      // get contract instance
+      App.contracts.Battleship.deployed()
+        .then(function (instance) {
+          battleshipInstance = instance; //call the JoinMatch function on the contract with the id of the match
+          return battleshipInstance.JoinMatch(insertedGameID);
+        })
+        .then(function (receipt) {
+          // print to console recepit infos
+          console.log("[JoinMatchId " + matchID + "] Initial stake:", ethStake);
+          // extact game infos from the receipt
+          matchID = insertedGameID;
+          ethStake = receipt.logs[0].args._stakeTemp.toNumber();
+          boardSize = receipt.logs[0].args._boardSize.toNumber();
+          numberOfShips = receipt.logs[0].args._numberOfShips.toNumber();
+          playerShipsNumber = numberOfShips;
+          
+          // show the proposal 
+          $("#opponentProposal").show();
+          
+          // show the proposal on the UI
+          document.getElementById("yourProposalText").style.color = "red";
+
+          // diasble the button if the proposal is not valid (null, <0)
+          document.getElementById('accept-proposal').disabled = !(ethStake && ethStake > 0);
+
+          // update the stake proposal with the amount converted from wei to eth
+          $("#yourProposalText").text(" " + window.web3Utils.fromWei(ethStake.toString()) + " ETH");
+          
+          // hide unuseful objects form the UI
+          $("#joinByIdForm").hide();
+          $("#buttons-init").hide();
+          $("#formContainer").show();
+
+          // update the game ID to the UI
+          $("#game-info").text("Match ID: " + matchID);
+
+          // start the event loop
+          App.event_loop();
+        })
+        .catch(function (err) {
+          // handle errors and display error message
+          console.error(err);
+          alertFire('Error', 'need a valid match ID!', 'error', false, 0);
+ 
+        });
+    }
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
   
-
-
   CommitStake: function() {
     var ethStake = $('#ethAmount').val(); // Get the value of ethAmount input
     console.log("[CommitStake " + matchID + "] Stake proposal: ", ethStake);
