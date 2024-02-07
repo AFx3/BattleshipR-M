@@ -14,12 +14,12 @@ contract Battleship {
         uint stake;                  // Decided amount of the stake for the match
         address stakeProposer;      // Address of the player who proposed the stake
         uint stakeProposal;          // Proposed stake amount
-        bytes32 merklePlayerA;       // Merkle root for player A's data
-        bytes32 merklePlayerB;       // Merkle root for player B's data
-        uint ethPlayerA;             // Amount of Ether staked by player A
-        uint ethPlayerB;             // Amount of Ether staked by player B
-        uint playerANumShips;        // Number of ships owned by player A at each turn
-        uint playerBNumShips;        // Number of ships owned by player B at each turn
+        bytes32 merkleX;       // Merkle root for player A's data
+        bytes32 merkleY;       // Merkle root for player B's data
+        uint stakeX;             // Amount of Ether staked by player A
+        uint stakeY;             // Amount of Ether staked by player B
+        uint NumShipsX;        // Number of ships owned by player A at each turn
+        uint NumShipsY;        // Number of ships owned by player B at each turn
         uint fixedShipsNumber;       // Number of ships in the match
         uint timeoutForAccusation;   // Timeout period for making an accusation
         address accusedOpponent;     // Address of the accused opponent
@@ -81,7 +81,7 @@ contract Battleship {
 
     modifier shipsNotSunk(uint _matchID) {
         // Ensure at least one player has sunk all their ships in the specified match
-        require(matchList[_matchID].playerANumShips <= 0 || matchList[_matchID].playerBNumShips <= 0, "Ships not sunked by any player");
+        require(matchList[_matchID].NumShipsX <= 0 || matchList[_matchID].NumShipsY <= 0, "Ships not sunked by any player");
         _;
     }
  
@@ -128,18 +128,7 @@ contract Battleship {
     Match[] public matchList;
 
     // Count of active matches
-    uint public activeMatchesCount;
-
-
-    constructor() {
-        activeMatchesCount = 0;
-    }
-
-
-    
-
-
-
+    uint public activeMatchesCount=0;
 
 
 
@@ -201,7 +190,7 @@ contract Battleship {
             matchIstance.stakeProposal,
             returnIndex,
             matchIstance.boardSize,
-            matchIstance.playerANumShips
+            matchIstance.NumShipsX
         );
     }
 
@@ -227,7 +216,7 @@ contract Battleship {
             matchedGame.stakeProposal,
             returnIndex,
             matchedGame.boardSize,
-            matchedGame.playerANumShips
+            matchedGame.NumShipsX
         );
     }
 
@@ -240,36 +229,41 @@ contract Battleship {
     *         - The availability of an external oracle or mechanism for obtaining random values.
     *         - The activeMatchesCount variable to be set properly.
     */
-    function getRandomMatchIndex() private view returns (uint) {
-        bytes32 rand = randomValue();
-        return uint(rand) % activeMatchesCount + 1;
-    }
+
+
+  
+
+
 
     /**
-    * @dev Find a joinable match based on a random index.
-    * @return The index of the joinable match found or the length of the match list if no joinable match is found.
-    * @notice This function searches for a joinable match based on a random index within the match list.
-    *         It iterates through the match list, checking if each match is joinable.
-    *         When a joinable match is found, its index is returned.
-    *         If no joinable match is found, the function returns the length of the match list.
-    * @dev Requires:
-    *         - The availability of a valid matchList containing match information.
-    *         - The getRandomMatchIndex function to properly generate a random index.
-    */
-    function findJoinableMatch() private view returns (uint) {
-        uint remainingIndex = getRandomMatchIndex(); // Get a random index within the range of active matches.
+ * @dev Find a joinable match based on a random index.
+ * @return The index of the joinable match found or the length of the match list if no joinable match is found.
+ * @notice This function searches for a joinable match based on a random index within the match list.
+ *         It iterates through the match list, checking if each match is joinable.
+ *         When a joinable match is found, its index is returned.
+ *         If no joinable match is found, the function returns the length of the match list.
+ * @dev Requires:
+ *         - The availability of an external oracle or mechanism for obtaining random values.
+ *         - The activeMatchesCount variable to be set properly.
+ */
+function findJoinableMatch() private view returns (uint) {
+    bytes32 rand = randomValue(); // Get a random value.
+    uint remainingIndex = uint(rand) % activeMatchesCount + 1; // Convert it to a valid index within the range of active matches.
 
-        // Iterate through the match list to find a joinable match.
-        for (uint i = 0; i < matchList.length; i++) {
-            if (matchList[i].joinableMatch) { // Check if the current match is joinable.
-                if (remainingIndex == 1) { // If the remaining index is 1, we've found the desired match.
-                    return i; // Return the index of the joinable match.
-                }
-                remainingIndex--; // Decrement the remaining index if the current match is not joinable.
+    // Iterate through the match list to find a joinable match.
+    for (uint i = 0; i < matchList.length; i++) {
+        if (matchList[i].joinableMatch) { // Check if the current match is joinable.
+            if (remainingIndex == 1) { // If the remaining index is 1, we've found the desired match.
+                return i; // Return the index of the joinable match.
             }
+            remainingIndex--; // Decrement the remaining index if the current match is not joinable.
         }
-        return matchList.length; // No joinable match found, return the length of the match list.
     }
+    return matchList.length; // No joinable match found, return the length of the match list.
+}
+
+
+
 
 
 
@@ -339,9 +333,9 @@ contract Battleship {
 
         // Update the corresponding player's Ether stake
         if (matchList[_matchID].playerX == msg.sender) {
-            matchList[_matchID].ethPlayerA += msg.value; // Use "+=" to add the sent Ether to existing balance
+            matchList[_matchID].stakeX += msg.value; // Use "+=" to add the sent Ether to existing balance
         } else {
-            matchList[_matchID].ethPlayerB += msg.value; 
+            matchList[_matchID].stakeY += msg.value; 
         }
     }
 
@@ -382,13 +376,13 @@ contract Battleship {
 
         // Update the appropriate player's merkle root based on the sender
         if (msg.sender == matchData.playerX) {
-            matchData.merklePlayerA = _merkleroot;
+            matchData.merkleX = _merkleroot;
         } else {
-            matchData.merklePlayerB = _merkleroot;
+            matchData.merkleY = _merkleroot;
         }
 
         // Check if both players have provided their merkle roots to start the match
-        if (matchData.merklePlayerB != 0 && matchData.merklePlayerA != 0) {
+        if (matchData.merkleY != 0 && matchData.merkleX != 0) {
 
             matchData.startedMatch = true;
 
@@ -433,11 +427,11 @@ contract Battleship {
 
         // Determine the player's Merkle root and the number of their remaining ships.
         if (matchInstance.playerX == msg.sender) {
-            playerNumShips = matchInstance.playerANumShips;
-            playerMerkleRoot =  matchInstance.merklePlayerA;
+            playerNumShips = matchInstance.NumShipsX;
+            playerMerkleRoot =  matchInstance.merkleX;
         } else {
-            playerNumShips = matchInstance.playerBNumShips;
-            playerMerkleRoot = matchInstance.merklePlayerB;
+            playerNumShips = matchInstance.NumShipsY;
+            playerMerkleRoot = matchInstance.merkleY;
         }
 
         // Hash the player's Merkle root to compare with the computed Merkle root.
@@ -451,9 +445,9 @@ contract Battleship {
             // Handle ship destruction and updates based on the attack result.
             if (_attackResult == 1) {
                 if (msg.sender == matchInstance.playerX) {
-                    matchInstance.playerANumShips = playerNumShips - 1;
+                    matchInstance.NumShipsX = playerNumShips - 1;
                 } else {
-                    matchInstance.playerBNumShips = playerNumShips - 1;
+                    matchInstance.NumShipsY = playerNumShips - 1;
                 }
             }
         } else {
@@ -472,7 +466,7 @@ contract Battleship {
         }
 
         // Check for match completion conditions and transfer rewards if applicable.
-        if (matchInstance.playerANumShips <= 0 || matchInstance.playerBNumShips <= 0) {
+        if (matchInstance.NumShipsX <= 0 || matchInstance.NumShipsY <= 0) {
             if (msg.sender == matchInstance.playerX) {
                 winner = matchInstance.playerY;
             } else {
@@ -512,10 +506,10 @@ contract Battleship {
         bool cheaterDetected = false;
 
         // Determine the winner and loser based on the player's remaining ships.
-        if (msg.sender == matchInstance.playerX && matchInstance.playerBNumShips <= 0) {
+        if (msg.sender == matchInstance.playerX && matchInstance.NumShipsY <= 0) {
             winner = matchInstance.playerX;
             loser = matchInstance.playerY;
-        } else if (msg.sender == matchInstance.playerY && matchInstance.playerANumShips <= 0) {
+        } else if (msg.sender == matchInstance.playerY && matchInstance.NumShipsX <= 0) {
             winner = matchInstance.playerY;
             loser = matchInstance.playerX;
         } else {
