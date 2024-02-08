@@ -79,12 +79,12 @@ contract Battleship {
         _;
     }
 
+    
     modifier shipsNotSunk(uint _matchID) {
-        // Ensure at least one player has sunk all their ships in the specified match
+          // Ensure at least one player has sunk all their ships in the specified match
         require(gamesArray[_matchID].NumShipsX <= 0 || gamesArray[_matchID].NumShipsY <= 0, "Ships not sunked by any player");
         _;
     }
- 
 
 
     // Event to notify when players have joined the match
@@ -375,141 +375,91 @@ function findJoinableMatch() private view returns (uint) {
     }
 
 
-
-
-
-
-/*
+/* 
+handles the submission of an attack proof for a specific match identified by _matchID. 
+The function first verifies that the match is valid, the sender is one of the players, and the match hasn't started yet. 
+Then, it calculates a Merkle root based on the provided Merkle proof and compares it with the Merkle root of the attacking player. 
+Depending on whether the Merkle roots match or not, the function processes the attack, updates ship counts, and handles cheating situations. 
+Finally, it checks for match completion conditions and transfers rewards if applicable while mitigating reentrancy vulnerabilities.
+*/
     function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public validMatch(_matchID) onlyPlayer(_matchID) matchNotStarted(_matchID) {
-
+        // get the match instance form gamesArray
         Battle storage matchInstance = gamesArray[_matchID];
+
+        // set the computed merkle root to provided attack hash
         bytes32 computedMerkleRoot = _attackHash;
+
+        // flag to indicate if cheating is detected
         bool cheaterDetected = false;
 
+        // addresses to store the winner and loser
         address winner;
         address loser;
 
-        // Calculate the computed Merkle root using the provided Merkle proof.
+        // Calculate the computed Merkle root using the provided merkle proof
         for (uint i = 0; i < merkleProof.length; i++) {
             computedMerkleRoot = keccak256(abi.encodePacked(merkleProof[i] ^ computedMerkleRoot));
         }
 
+        // Determine the player's Merkle root and the number of their remaining ships
         uint256 playerNumShips;
         bytes32 playerMerkleRoot;
 
-        // Determine the player's Merkle root and the number of their remaining ships.
-        if (matchInstance.playerX == msg.sender) {
-            playerNumShips = matchInstance.NumShipsX;
-            playerMerkleRoot =  matchInstance.merkleX;
-        } else {
-            playerNumShips = matchInstance.NumShipsY;
-            playerMerkleRoot = matchInstance.merkleY;
-        }
+        // get player's ship count and merkle root 
+        (playerNumShips, playerMerkleRoot) = getPlayerInfo(matchInstance, msg.sender);
 
-        // Hash the player's Merkle root to compare with the computed Merkle root.
+        // hash the player's Merkle root to compare with the computed root
         playerMerkleRoot = keccak256(abi.encodePacked(playerMerkleRoot));
         computedMerkleRoot = keccak256(abi.encodePacked(computedMerkleRoot));
 
-        // If the computed Merkle root matches the player's Merkle root, process the attack.
+        // If m root ==  player's merkle root -> attack is valid
         if (computedMerkleRoot == playerMerkleRoot) {
-            emit attackResult(_matchID, _attackResult, (msg.sender == matchInstance.playerX) ? matchInstance.playerY : matchInstance.playerX);
+            //emit attack result event
+            emit attackResult(_matchID, _attackResult, getOpponent(matchInstance, msg.sender));
 
-            // Handle ship destruction and updates based on the attack result.
+             // ship destruction and updates based on the attack result
             if (_attackResult == 1) {
                 if (msg.sender == matchInstance.playerX) {
-                    matchInstance.NumShipsX = playerNumShips - 1;
+                    matchInstance.NumShipsX--;
                 } else {
-                    matchInstance.NumShipsY = playerNumShips - 1;
+                    matchInstance.NumShipsY--;
                 }
             }
         } else {
-            // Cheating detected: update winner and loser, finish the match.
-            if (msg.sender == matchInstance.playerX) {
-                winner = matchInstance.playerY;
-                loser = matchInstance.playerX;
-            } else {
-                winner = matchInstance.playerX;
-                loser = matchInstance.playerY;
-            }
-
+            // get the winner and loser in case of cheating
+            (winner, loser) = getWinnerAndLoser(matchInstance, msg.sender);
+            // set metch status fo finished
             matchInstance.startedMatch = false;
-            emit matchFinished(_matchID, winner, loser, "Cheater detected: ETH sent to the winner!");
+
+            // emit match finished event with cheating msg
+            emit matchFinished(_matchID, winner, loser, "CHEATING: Invalid attack proof!");
             cheaterDetected = true;
         }
 
-        // Check for match completion conditions and transfer rewards if applicable.
+        // check for match completion conditions and transfer rewards if applicable
         if (matchInstance.NumShipsX <= 0 || matchInstance.NumShipsY <= 0) {
-            if (msg.sender == matchInstance.playerX) {
-                winner = matchInstance.playerY;
-            } else {
-                winner = matchInstance.playerX;
-            }
-
+            // determin winner sccording to ramaining ships
+            winner = (msg.sender == matchInstance.playerX) ? matchInstance.playerY : matchInstance.playerX;
+            
+            // set match as finished
             matchInstance.startedMatch = false;
-            emit matchFinished(_matchID, winner, msg.sender, "All ships sunk: match finished!");
+
+            // emit match finished
+            emit matchFinished(_matchID, winner, msg.sender, "No more ships left!");
         }
 
-        // Mitigate reentrancy vulnerability using "Checks-Effects-Interactions" pattern. See report for details.
+        // reentrancy vuln mitigation with cheater set to false before transferring founds
+        // if try to attack explointing the flag, will not succeed as state change occurs 
+        // before the external call to transfer()
+        /*
         if (cheaterDetected && winner != address(0)) {
+            // Set the flag before the transfer
+            cheaterDetected = false; // Reset the flag after the transfer is complete
             payable(winner).transfer(matchInstance.stake * 2);
-        }
+        }*/
     }
 
 
-*/
-    function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public validMatch(_matchID) onlyPlayer(_matchID) matchNotStarted(_matchID) {
-    Battle storage matchInstance = gamesArray[_matchID];
-    bytes32 computedMerkleRoot = _attackHash;
-    bool cheaterDetected = false;
-    address winner;
-    address loser;
-
-    // Calculate the computed Merkle root using the provided Merkle proof.
-    for (uint i = 0; i < merkleProof.length; i++) {
-        computedMerkleRoot = keccak256(abi.encodePacked(merkleProof[i] ^ computedMerkleRoot));
-    }
-
-    // Determine the player's Merkle root and the number of their remaining ships.
-    uint256 playerNumShips;
-    bytes32 playerMerkleRoot;
-    (playerNumShips, playerMerkleRoot) = getPlayerInfo(matchInstance, msg.sender);
-
-    // Hash the player's Merkle root to compare with the computed Merkle root.
-    playerMerkleRoot = keccak256(abi.encodePacked(playerMerkleRoot));
-    computedMerkleRoot = keccak256(abi.encodePacked(computedMerkleRoot));
-
-    // If the computed Merkle root matches the player's Merkle root, process the attack.
-    if (computedMerkleRoot == playerMerkleRoot) {
-        emit attackResult(_matchID, _attackResult, getOpponent(matchInstance, msg.sender));
-
-        // Handle ship destruction and updates based on the attack result.
-        if (_attackResult == 1) {
-            if (msg.sender == matchInstance.playerX) {
-                matchInstance.NumShipsX--;
-            } else {
-                matchInstance.NumShipsY--;
-            }
-        }
-    } else {
-        // Cheating detected: update winner and loser, finish the match.
-        (winner, loser) = getWinnerAndLoser(matchInstance, msg.sender);
-        matchInstance.startedMatch = false;
-        emit matchFinished(_matchID, winner, loser, "Cheater detected: ETH sent to the winner!");
-        cheaterDetected = true;
-    }
-
-    // Check for match completion conditions and transfer rewards if applicable.
-    if (matchInstance.NumShipsX <= 0 || matchInstance.NumShipsY <= 0) {
-        winner = (msg.sender == matchInstance.playerX) ? matchInstance.playerY : matchInstance.playerX;
-        matchInstance.startedMatch = false;
-        emit matchFinished(_matchID, winner, msg.sender, "All ships sunk: match finished!");
-    }
-
-    // Mitigate reentrancy vulnerability using "Checks-Effects-Interactions" pattern. See report for details.
-    if (cheaterDetected && winner != address(0)) {
-        payable(winner).transfer(matchInstance.stake * 2);
-    }
-}
 
 function getPlayerInfo(Battle storage matchInstance, address player) internal view returns (uint256, bytes32) {
     if (player == matchInstance.playerX) {
