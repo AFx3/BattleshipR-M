@@ -61,18 +61,6 @@ contract Battleship {
         _;
     }
 
-    modifier validStake(uint _stake) {
-        // Ensure the provided stake amount is valid (greater than zero)
-        require(_stake > 0, "Stake must be greater than zero");
-        _;
-    }
-
-    modifier stakeNotSet(uint _matchID) {
-        // Ensure the stake for the specified match has not been set yet
-        require(gamesArray[_matchID].stake == 0, "Stake already set");
-        _;
-    }
-
     modifier temporaryStakeSet(uint _matchID) {
         // Ensure the temporary stake for the specified match has been set
         require(gamesArray[_matchID].stakeProposal > 0, "Temporary stake not set");
@@ -237,43 +225,22 @@ function findJoinableMatch() private view returns (uint) {
 }
 
 
+    function proposeStake(uint _matchID, uint _stake) validMatch(_matchID) public {
+        Battle storage matchInstance = gamesArray[_matchID];
+        require(matchInstance.playerX == msg.sender || matchInstance.playerY == msg.sender, "Unauthorized player");
 
+        matchInstance.stakeProposal = _stake;
+        matchInstance.stakeProposer = msg.sender;
 
-
-
-
-
-
-
-
-
-
-
-
-    /**
-    * @dev Commit a stake for a specific match.
-    * @param _matchID The ID of the match to commit the stake to.
-    * @param _stake The stake of stake to commit.
-    * @notice This function allows a participant to commit a stake for a match they are part of.
-    *         The stake stake must be greater than zero, the match ID must be valid, and the
-    *         participant must be part of the match. The function emits an event indicating the
-    *         stake committed for the match.
-    * @dev Requires:
-    *         - The creator's address for the given match is not null.
-    *         - The stake is greater than zero and the match ID is within a valid range.
-    *         - The sender is a participant of the match.
-    *         - The stake for the match has not already been decided.
-    */
-    function proposeStake(uint _matchID, uint _stake) public validMatch(_matchID) onlyPlayer(_matchID) stakeNotSet(_matchID) validStake(_stake) {
-
-        Battle storage matchIstance = gamesArray[_matchID];
-        // Update temporary stake and requester for the match
-        matchIstance.stakeProposal = _stake;
-        matchIstance.stakeProposer = msg.sender;
-
-        // Emit an event to indicate the stake to spend for the match
         emit stakeProposal(_matchID, _stake, msg.sender);
     }
+
+
+
+
+
+
+
 
 
     /**
