@@ -87,8 +87,6 @@ contract Battleship {
  
 
 
-
-
     // Event to notify when players have joined the match
     event playersJoined(address indexed _playerX,address indexed _playerY,uint _stakeTemp ,uint indexed _matchID,uint _boardSize,uint _numberOfShips);
 
@@ -128,43 +126,44 @@ contract Battleship {
     Battle[] public gamesArray;
 
     // Count of active matches
-    uint public currentGames=0;
-
+    uint public currentGames = 0;
 
 
 
     function NewMatch(uint _boardSize, uint _numberOfShips) public validSize(_boardSize) {
-        // Create a new Match and push it to the matchList array
-        // The Match constructor initializes various properties of the match
-        gamesArray.push(
-            Battle(
-                msg.sender,          // Player 1 (creator)
-                address(0),          // Player 2 (not set yet)
-                true,                // Match is joinable
-                false,               // Match has not started yet
-                _boardSize,           // Board dimension
-                0,                   // Game stake (not set yet)
-                address(0),          // Address of player who proposed the stake (not set yet)
-                0,                   // Game stake proposal (not set yet)
-                0,                   // Player 1's Merkle root (not set yet)
-                0,                   // Player 2's Merkle root (not set yet)
-                0,                   // Player 1 ETH stake
-                0,                   // Player 2 ETH stake
-                _numberOfShips,      // Number of ships remaining for player 1
-                _numberOfShips,      // Number of ships remaining for player 2
-                _numberOfShips,      // Number of ships in the match
-                0,                   // Total number of attacks made
-                address(0),          // Address of player who accused (not set yet)
-                msg.sender           // Address of the creator
-            )
-        );
+    // Create a new Battle instance
+    Battle memory newMatch;
 
-        // Increment the count of open games
-        currentGames++;
+    // Set properties of the new match
+    newMatch.playerX = msg.sender;
+    newMatch.playerY = address(0);
+    newMatch.joinableMatch = true;
+    newMatch.startedMatch = false;
+    newMatch.boardSize = _boardSize;
+    newMatch.stake = 0;
+    newMatch.stakeProposer = address(0);
+    newMatch.stakeProposal = 0;
+    newMatch.merkleX = 0;
+    newMatch.merkleY = 0;
+    newMatch.stakeX = 0;
+    newMatch.stakeY = 0;
+    newMatch.NumShipsX = _numberOfShips;
+    newMatch.NumShipsY = _numberOfShips;
+    newMatch.fixedShipsNumber = _numberOfShips;
+    newMatch.timeoutForAccusation = 0;
+    newMatch.accusedOpponent = address(0);
+    newMatch.currentPlayerTurn = msg.sender;
 
-        // Emit an event to indicate the creation of a new match
-        emit UintOutput(msg.sender, gamesArray.length-1);
-    }
+    // Push the new match to the gamesArray
+    gamesArray.push(newMatch);
+
+    // Increment the count of open games
+    currentGames++;
+
+    // Emit an event to indicate the creation of a new match
+    emit UintOutput(msg.sender, gamesArray.length-1);
+}
+
 
 
  
@@ -236,6 +235,19 @@ function findJoinableMatch() private view returns (uint) {
     }
     return gamesArray.length; // No joinable match found, return the length of the match list.
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     /**
@@ -363,22 +375,11 @@ function findJoinableMatch() private view returns (uint) {
     }
 
 
-    /**
-    * @dev Submit an attack proof for a match.
-    * @param _matchID The ID of the match for which the attack proof is being submitted.
-    * @param _attackResult The result of the attack (0 for miss, 1 for hit).
-    * @param _attackHash The hash of the attack data for verification.
-    * @param merkleProof The Merkle proof for verifying the attack.
-    * @notice This function allows a player to submit an attack proof for a match they are part of.
-    *         The function validates the proof against the player's board, handles game mechanics,
-    *         and transfers rewards in case of a valid attack. It also detects cheating attempts.
-    * @dev Requires:
-    *         - The match ID must be valid and ongoing (according to modifiers).
-    *         - The sender must be a participant of the match.
-    * @dev Emits:
-    *         - An attackResult event indicating the outcome of the attack.
-    *         - A matchFinished event if cheating is detected or if all ships are sunk.
-    */
+
+
+
+
+/*
     function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public validMatch(_matchID) onlyPlayer(_matchID) matchNotStarted(_matchID) {
 
         Battle storage matchInstance = gamesArray[_matchID];
@@ -453,6 +454,98 @@ function findJoinableMatch() private view returns (uint) {
             payable(winner).transfer(matchInstance.stake * 2);
         }
     }
+
+
+*/
+    function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public validMatch(_matchID) onlyPlayer(_matchID) matchNotStarted(_matchID) {
+    Battle storage matchInstance = gamesArray[_matchID];
+    bytes32 computedMerkleRoot = _attackHash;
+    bool cheaterDetected = false;
+    address winner;
+    address loser;
+
+    // Calculate the computed Merkle root using the provided Merkle proof.
+    for (uint i = 0; i < merkleProof.length; i++) {
+        computedMerkleRoot = keccak256(abi.encodePacked(merkleProof[i] ^ computedMerkleRoot));
+    }
+
+    // Determine the player's Merkle root and the number of their remaining ships.
+    uint256 playerNumShips;
+    bytes32 playerMerkleRoot;
+    (playerNumShips, playerMerkleRoot) = getPlayerInfo(matchInstance, msg.sender);
+
+    // Hash the player's Merkle root to compare with the computed Merkle root.
+    playerMerkleRoot = keccak256(abi.encodePacked(playerMerkleRoot));
+    computedMerkleRoot = keccak256(abi.encodePacked(computedMerkleRoot));
+
+    // If the computed Merkle root matches the player's Merkle root, process the attack.
+    if (computedMerkleRoot == playerMerkleRoot) {
+        emit attackResult(_matchID, _attackResult, getOpponent(matchInstance, msg.sender));
+
+        // Handle ship destruction and updates based on the attack result.
+        if (_attackResult == 1) {
+            if (msg.sender == matchInstance.playerX) {
+                matchInstance.NumShipsX--;
+            } else {
+                matchInstance.NumShipsY--;
+            }
+        }
+    } else {
+        // Cheating detected: update winner and loser, finish the match.
+        (winner, loser) = getWinnerAndLoser(matchInstance, msg.sender);
+        matchInstance.startedMatch = false;
+        emit matchFinished(_matchID, winner, loser, "Cheater detected: ETH sent to the winner!");
+        cheaterDetected = true;
+    }
+
+    // Check for match completion conditions and transfer rewards if applicable.
+    if (matchInstance.NumShipsX <= 0 || matchInstance.NumShipsY <= 0) {
+        winner = (msg.sender == matchInstance.playerX) ? matchInstance.playerY : matchInstance.playerX;
+        matchInstance.startedMatch = false;
+        emit matchFinished(_matchID, winner, msg.sender, "All ships sunk: match finished!");
+    }
+
+    // Mitigate reentrancy vulnerability using "Checks-Effects-Interactions" pattern. See report for details.
+    if (cheaterDetected && winner != address(0)) {
+        payable(winner).transfer(matchInstance.stake * 2);
+    }
+}
+
+function getPlayerInfo(Battle storage matchInstance, address player) internal view returns (uint256, bytes32) {
+    if (player == matchInstance.playerX) {
+        return (matchInstance.NumShipsX, matchInstance.merkleX);
+    } else {
+        return (matchInstance.NumShipsY, matchInstance.merkleY);
+    }
+}
+
+function getOpponent(Battle storage matchInstance, address player) internal view returns (address) {
+    return (player == matchInstance.playerX) ? matchInstance.playerY : matchInstance.playerX;
+}
+
+function getWinnerAndLoser(Battle storage matchInstance, address cheater) internal view returns (address, address) {
+    if (cheater == matchInstance.playerX) {
+        return (matchInstance.playerY, matchInstance.playerX);
+    } else {
+        return (matchInstance.playerX, matchInstance.playerY);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
     * @dev Verify the opponent's board after the match is finished.
@@ -587,27 +680,7 @@ function findJoinableMatch() private view returns (uint) {
     }
 
 
-   /*
-    function randomValue() private view returns (bytes32) {
-        // Retrieve the block hash of the previous block
-        bytes32 previousBlockHash = blockhash(block.number - 1);
-
-        // Copy relevant bytes from the block hash to a new bytes array
-        bytes memory bytesArray = new bytes(32);
-        for (uint i = 0; i < 32; i++) {
-            bytesArray[i] = previousBlockHash[i];
-        }
-
-        // Generate a pseudo-random value using the copied bytes and keccak256
-        bytes32 randValue = keccak256(bytesArray);
-
-        return randValue;
-    }
-*/
-    /**
-        * @dev Generates a pseudo-random value based on the current block hash.
-        * @return A pseudo-random bytes32 value.
-    */
+   // ciao
     function randomValue() private view returns (bytes32) {
         // Utilizza l'hash del blocco corrente e il numero casuale della beacon chain
         bytes32 randValue = keccak256(abi.encodePacked(blockhash(block.number), block.timestamp, block.basefee));
