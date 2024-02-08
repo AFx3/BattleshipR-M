@@ -41,14 +41,6 @@ contract Battleship {
     }
 
 
-
-    modifier notAccused(uint _matchID) {
-        // Ensure the sender is not the accused opponent in the specified match
-        require(gamesArray[_matchID].accusedOpponent != msg.sender, "Cannot accuse opponent again");
-        _;
-    }
-
-
     modifier matchNotStarted(uint _matchID) {
         // Ensure both players have provided their merkle roots, indicating match start
         require(gamesArray[_matchID].startedMatch == true, "Match not started");
@@ -67,13 +59,7 @@ contract Battleship {
         _;
     }
 
-    
-    modifier shipsNotSunk(uint _matchID) {
-          // Ensure at least one player has sunk all their ships in the specified match
-        require(gamesArray[_matchID].NumShipsX <= 0 || gamesArray[_matchID].NumShipsY <= 0, "Ships not sunked by any player");
-        _;
-    }
-
+ 
 
     // Event to notify when players have joined the match
     event playersJoined(address indexed _playerX,address indexed _playerY,uint _stakeTemp ,uint indexed _matchID,uint _boardSize,uint _numberOfShips);
@@ -450,20 +436,6 @@ function getWinnerAndLoser(Battle storage matchInstance, address cheater) intern
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
     * @dev Verify the opponent's board after the match is finished.
     * @param _matchID The ID of the finished match.
@@ -539,65 +511,68 @@ function getWinnerAndLoser(Battle storage matchInstance, address cheater) intern
 
 
 
-    /**
-    * @dev Notifies the opponent to play, triggering a timeout event and potentially ending the match.
-    * @param _matchID The unique identifier of the match.
-    */
-    function accuseOpponent(uint _matchID) public validMatch(_matchID) onlyPlayer(_matchID) notAccused(_matchID) {
-        
-        Battle storage matchIstance = gamesArray[_matchID];
-        address accusedOpponent;
 
-        bool timeoutExceeded = false;
-        address winner;
-        address loser;
+   
+    function accuseOpponent(uint _matchID) public validMatch(_matchID) onlyPlayer(_matchID) {
+    Battle storage matchInstance = gamesArray[_matchID];
 
-        // Determine the accused opponent based on the sender
-        if (matchIstance.playerY == msg.sender) {
-            accusedOpponent = matchIstance.playerX;
-        } else {
-            accusedOpponent = matchIstance.playerY;
-        }
+    // Check if the match has already ended
+    require(matchInstance.startedMatch == true, "Match not started yet");
 
-        // Handle timeout scenario
-        if (matchIstance.timeoutForAccusation != 0) {
-            // Check if more than 5 blocks have passed since the notify was triggered
-            if (block.number >= matchIstance.timeoutForAccusation) {
-                // Determine the winner and transfer ETH accordingly
+    address accusedOpponent;
 
-                if (matchIstance.accusedOpponent == matchIstance.playerY) {
-                    winner = matchIstance.playerX;
-                    loser = matchIstance.playerY;
-                } else {
-                    winner = matchIstance.playerY;
-                    loser = matchIstance.playerX;
-                }
+    // Determine the accused opponent based on the sender
+    if (matchInstance.playerY == msg.sender) {
+        accusedOpponent = matchInstance.playerX;
+    } else {
+        accusedOpponent = matchInstance.playerY;
+    }
 
-                timeoutExceeded = true;
+    // Check if the accused opponent has already been accused
+    require(matchInstance.accusedOpponent != accusedOpponent, "Opponent already accused");
 
-                // End the match due to timeout
-                emit winnerIs(_matchID, winner, "AFK timeout reached: match finished!");
+    bool timeoutExceeded = false;
+    address winner;
+    address loser;
+
+    // Handle timeout scenario
+    if (matchInstance.timeoutForAccusation != 0) {
+        // Check if more than 5 blocks have passed since the notify was triggered
+        if (block.number >= matchInstance.timeoutForAccusation) {
+            // Determine the winner and transfer ETH accordingly
+            if (matchInstance.accusedOpponent == matchInstance.playerY) {
+                winner = matchInstance.playerX;
+                loser = matchInstance.playerY;
             } else {
-                // Emit accusation notification
-                emit accusationNotify(_matchID, accusedOpponent, msg.sender);
+                winner = matchInstance.playerY;
+                loser = matchInstance.playerX;
             }
-        } else {
-            // Set the timeout for accusation and record the accused opponent
-            matchIstance.timeoutForAccusation = block.number + 5;
-            matchIstance.accusedOpponent = accusedOpponent;
 
+            timeoutExceeded = true;
+
+            // End the match due to timeout
+            emit winnerIs(_matchID, winner, "AFK timeout reached: match finished!");
+        } else {
             // Emit accusation notification
             emit accusationNotify(_matchID, accusedOpponent, msg.sender);
         }
+    } else {
+        // Set the timeout for accusation and record the accused opponent
+        matchInstance.timeoutForAccusation = block.number + 5;
+        matchInstance.accusedOpponent = accusedOpponent;
 
-        if(timeoutExceeded && winner != address(0)){
-            // Transfer the stake to the accused opponent
-            payable(winner).transfer(matchIstance.stake * 2);
-        }
+        // Emit accusation notification
+        emit accusationNotify(_matchID, accusedOpponent, msg.sender);
     }
 
+    if (timeoutExceeded && winner != address(0)) {
+        // Transfer the stake to the accused opponent
+        payable(winner).transfer(matchInstance.stake * 2);
+    }
+}
 
-   // ciao
+
+
     function randomValue() private view returns (bytes32) {
         // Utilizza l'hash del blocco corrente e il numero casuale della beacon chain
         bytes32 randValue = keccak256(abi.encodePacked(blockhash(block.number), block.timestamp, block.basefee));
