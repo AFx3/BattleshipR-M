@@ -45,13 +45,13 @@ contract Battleship {
         require(gamesArray[_matchID].startedMatch == true, "Match not started");
         _;
     }
-/*
+
     modifier validSize(uint _size) {
         // Ensure the provided board size is valid (greater than zero)
         require(_size > 0, "Invalid board size");
         _;
     }
-    */
+    
 
     modifier temporaryStakeSet(uint _matchID) {
         // Ensure the temporary stake for the specified match has been set
@@ -103,7 +103,7 @@ contract Battleship {
     uint public currentGames = 0;
 
 
-/*
+
     function NewMatch(uint _boardSize, uint _numberOfShips) public validSize(_boardSize) {
     // Create a new Battle instance
     Battle memory newMatch;
@@ -138,49 +138,11 @@ contract Battleship {
     emit UintOutput(msg.sender, gamesArray.length-1);
 }
 
-*/
 
 
 
-    function NewMatch(uint _boardSize, uint _numberOfShips) public {
-    // Ensure the provided board size is valid (greater than zero)
-    require(_boardSize > 0, "Invalid board size");
 
-    // Create a new Battle instance
-    Battle memory newMatch;
-
-    // Set properties of the new match
-    newMatch.playerX = msg.sender;
-    newMatch.playerY = address(0);
-    newMatch.joinableMatch = true;
-    newMatch.startedMatch = false;
-    newMatch.boardSize = _boardSize;
-    newMatch.stake = 0;
-    newMatch.stakeProposer = address(0);
-    newMatch.stakeProposal = 0;
-    newMatch.merkleX = 0;
-    newMatch.merkleY = 0;
-    newMatch.stakeX = 0;
-    newMatch.stakeY = 0;
-    newMatch.NumShipsX = _numberOfShips;
-    newMatch.NumShipsY = _numberOfShips;
-    newMatch.fixedShipsNumber = _numberOfShips;
-    newMatch.timeoutForAccusation = 0;
-    newMatch.accusedOpponent = address(0);
-    newMatch.currentPlayerTurn = msg.sender;
-
-    // Push the new match to the gamesArray
-    gamesArray.push(newMatch);
-
-    // Increment the count of open games
-    currentGames++;
-
-    // Emit an event to indicate the creation of a new match
-    emit UintOutput(msg.sender, gamesArray.length-1);
-}
-
-
-
+    
 
 
 
