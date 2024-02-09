@@ -71,10 +71,10 @@ contract Battleship {
     event stakeAccepted(uint indexed _matchID,uint _stake);
 
     // Event to output a uint value
-    event UintOutput(address indexed _proposer,uint _assignedMatchID);
+    event newMatchCreated(address indexed _proposer,uint _assignedMatchID);
 
     // Custom error event
-    error ErrorOut(string err);
+    //error ErrorOut(string err);
 
     // Event to signal the official start of the match
     event matchStarted(uint indexed _matchID, address indexed _playerX, address indexed _playerY);
@@ -135,7 +135,7 @@ contract Battleship {
     currentGames++;
 
     // Emit an event to indicate the creation of a new match
-    emit UintOutput(msg.sender, gamesArray.length-1);
+    emit newMatchCreated(msg.sender, gamesArray.length-1);
 }
 
 
