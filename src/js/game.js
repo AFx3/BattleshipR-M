@@ -884,10 +884,10 @@ App = {
 
               }
             break;
-            case "attackNotify":
+            case "attackPerformed":
               var row = events.args._attackedRow.toNumber();
               var col = events.args._attackedCol.toNumber();
-              console.log("[AttackNotify " + matchID + "]: from " + events.args._attackerAddress +" on [" + row + "][" + col + "] is " + events.args._result);
+              console.log("[AttackPerformed " + matchID + "]: from " + events.args._attackerAddress +" on [" + row + "][" + col + "] is " + events.args._result);
 
 
             if(events.args._opponentAddress == web3.eth.defaultAccount){
@@ -943,7 +943,7 @@ App = {
             }
 
           break;
-            case "accusationNotify":
+            case "accuse":
             lastBlock = events.blockNumber;
 
             if(events.args._accused == web3.eth.defaultAccount){

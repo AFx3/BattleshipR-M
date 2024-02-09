@@ -47,46 +47,42 @@ contract Battleship {
         _;
     }
 
-     // Ensure both players have provided their merkle roots, indicating match start
+     // ensure both players have provided their merkle roots, indicating match start
     modifier merkleRootProvided(uint _matchID) {
-       
         require(gamesArray[_matchID].startedMatch == true, "Match not started");
         _;
     }
 
+    // ensure the provided board size is valid 
     modifier validSize(uint _size) {
-        // Ensure the provided board size is valid (greater than zero)
         require(_size > 0, "Invalid board size");
         _;
     }
     
-
-    modifier temporaryStakeSet(uint _matchID) {
-        // Ensure the temporary stake for the specified match has been set
+    // ensure the temporary stake for the specified match has been set
+    modifier stakeVariable(uint _matchID) {
         require(gamesArray[_matchID].stakeProposal > 0, "Temporary stake not set");
         _;
     }
 
- 
-
-    // Event to notify when players have joined the match
+    // EVENTS
+    // players have joined the match
     event playersJoined(address indexed _playerX,address indexed _playerY,uint _stakeTemp ,uint indexed _matchID,uint _boardSize,uint _numberOfShips);
 
-    // Event to propose the stake of money for the match stake
+    // propose the stake for the match 
     event stakeProposal(uint indexed _matchID,uint _stake,address _proposer);
 
-    // Event to notify that the stake proposal has been accepted
+    // stake proposal has been accepted
     event stakeAccepted(uint indexed _matchID,uint _stake);
 
-    // Event to output a uint value
+    // match has been created
     event newMatchCreated(address indexed _proposer,uint _assignedMatchID);
 
-
-    // Event to signal the official start of the match
+    // match has started
     event matchStarted(uint indexed _matchID, address indexed _playerX, address indexed _playerY);
 
-    // Event to notify an attack by a player on an opponent
-    event attackNotify(uint indexed _matchID ,address _attackerAddress, address _opponentAddress, uint _attackedRow, uint _attackedCol);
+    // attack by a player 
+    event attackPerformed(uint indexed _matchID ,address _attackerAddress, address _opponentAddress, uint _attackedRow, uint _attackedCol);
 
     // Event to indicate the result of an attack
     event attackResult(uint _matchID, uint8  _result,address _attackerAddress);
@@ -95,7 +91,7 @@ contract Battleship {
     event matchFinished(uint indexed _matchID,address _winnerAddr,address _loserAddr,string _cause);
 
     // Event to notify an accusation made by a player against another player
-    event accusationNotify(uint indexed _matchID,address _accused,address _accuser);
+    event accuse(uint indexed _matchID,address _accused,address _accuser);
 
     // Event to notify the winner of the match
     event winnerIs(uint indexed _matchID,address _winnerAddr, string _cause);
@@ -241,7 +237,7 @@ function findJoinableMatch() private view returns (uint) {
     *         Upon successful stake acceptance, the match's stake is updated with the temporary stake.
     *         An event is emitted to indicate the stake has been decided.
     */
-    function acceptStake(uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) temporaryStakeSet(_matchID) {
+    function acceptStake(uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) stakeVariable(_matchID) {
         
 
         Battle storage matchIstance = gamesArray[_matchID];
@@ -297,7 +293,7 @@ function findJoinableMatch() private view returns (uint) {
             address opponent = (matchIstance.playerX == msg.sender) ? matchIstance.playerY : matchIstance.playerX;
 
             // Emit the attack event and update player turn
-            emit attackNotify(_matchID, msg.sender, opponent, _attackedRow, _attackedCol);
+            emit attackPerformed(_matchID, msg.sender, opponent, _attackedRow, _attackedCol);
             matchIstance.currentPlayerTurn = opponent;
         }
 
@@ -556,7 +552,7 @@ function getWinnerAndLoser(Battle storage matchInstance, address cheater) intern
             emit winnerIs(_matchID, winner, "AFK timeout reached: match finished!");
         } else {
             // Emit accusation notification
-            emit accusationNotify(_matchID, accusedOpponent, msg.sender);
+            emit accuse(_matchID, accusedOpponent, msg.sender);
         }
     } else {
         // Set the timeout for accusation and record the accused opponent
@@ -564,7 +560,7 @@ function getWinnerAndLoser(Battle storage matchInstance, address cheater) intern
         matchInstance.accusedOpponent = accusedOpponent;
 
         // Emit accusation notification
-        emit accusationNotify(_matchID, accusedOpponent, msg.sender);
+        emit accuse(_matchID, accusedOpponent, msg.sender);
     }
 
     if (timeoutExceeded && winner != address(0)) {
