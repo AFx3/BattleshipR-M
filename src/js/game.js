@@ -125,14 +125,14 @@ App = {
           $("#searchingGame").hide();
         });
       
-        // event: when the user clicks on the join random button, call the JoinRandomGame function to join a random game
+        // event: when the user clicks on the join random button, call the JoinRandom function to join a random game
         $("#joinRandomBtn").click(function() {
           $("#buttons").hide();
           $("#formContainer").hide();
           $("#opponentProposal").hide();
           $("#joinByIdForm").hide();
           $("#searchingGame").hide();
-          App.JoinRandomGame();
+          App.JoinRandom();
 
         });
       
@@ -221,7 +221,7 @@ App = {
   
   // 2nd function to join game randomly
 
-  JoinRandomGame: function () {
+  JoinRandom: function () {
     // Deploy the Battleship contract instance
     App.contracts.Battleship.deployed()
       .then(function (instance) {
@@ -240,7 +240,7 @@ App = {
         playerShipsNumber = numberOfShips;
   
         // Log initial stake and update UI
-        console.log("[JoinRandomGame " + matchID + "] Initial stake:", ethStake);
+        console.log("[JoinRandom" + matchID + "] Initial stake:", ethStake);
         if (ethStake === null || ethStake <= 0) {
 
           // show the rival proposal
