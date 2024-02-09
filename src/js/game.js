@@ -520,6 +520,11 @@ App = {
   
   
   },
+
+
+
+
+
   
   generateMerkleProof: function (row, col) {
 
@@ -537,6 +542,7 @@ App = {
     return merkleProof;
 
   },
+  
 
   submitProofAttack: function (attackResult, hash, merkleProof) {
     try {
@@ -556,6 +562,9 @@ App = {
       console.error(error);
     }
   },
+
+  
+
 
   sendBordVerification: function () {
 
