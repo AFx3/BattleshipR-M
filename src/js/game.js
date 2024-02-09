@@ -524,42 +524,30 @@ App = {
   },
 
   /*
-  generateMerkleProof: function (row, col) {
-
-    var merkleProof = [];
-    let flatIndex = row * playerGrid.size + col;
-  
-    merkleTreeLevels.forEach(arr => {
-      if (arr.length > 1) {
-        let siblingIndex = flatIndex % 2 === 0 ? flatIndex + 1 : flatIndex - 1;
-        merkleProof.push(arr[siblingIndex].toString());
-        flatIndex = Math.floor(flatIndex / 2);
-      }
-    });
-  
-    return merkleProof;
-
-  },*/
+  - generates a Merkle proof for a specific cell in the player grid,
+  - takes the row, col indexes of the cell as parameters. 
+  */
   
   generateMerkleProof: function(row, col) {
+    // array to store the MP
     var merkleProof = [];
+    // calculate the flat index of the cell
     let flatIndex = row * playerGrid.size + col;
   
-    // Iterate through the Merkle tree levels
+    // iterate thru levels of the MT
     for (var arr of merkleTreeLevels) {
-      // Check if the current level has more than one node
+      // if current level has more than one node
       if (arr.length > 1) {
-        // Determine the index of the sibling node
+        // index of the sibling node
         let siblingIndex = flatIndex % 2 === 0 ? flatIndex + 1 : flatIndex - 1;
         
-        // Add the sibling node to the proof
+        // sibling node added to the proof
         merkleProof.push(arr[siblingIndex].toString());
         
-        // Update the flat index to the parent node
+        // update flat index to the parent node
         flatIndex = Math.floor(flatIndex / 2);
       }
     }
-  
     return merkleProof;
   },
 
