@@ -26,12 +26,11 @@ contract Battleship {
         address currentPlayerTurn;   // Address of the player whose turn it is
     }
 
-    modifier validMatch(uint _matchID) {
-        // Ensure the provided match ID is within valid range
+    modifier checkValidityIdMatch(uint _matchID) {
+        // require the provided match ID is within valid range
         require(_matchID < gamesArray.length, "Invalid match ID");
         _;
     }
-
 
 
     modifier onlyPlayer(uint _matchID) {
@@ -141,7 +140,7 @@ contract Battleship {
 
 
  
-    function JoinMatch(uint _matchID) validMatch(_matchID) public {
+    function JoinMatch(uint _matchID) checkValidityIdMatch(_matchID) public {
 
         Battle storage matchIstance = gamesArray[_matchID];
         require(currentGames > 0, "No available matches!");
@@ -211,7 +210,7 @@ function findJoinableMatch() private view returns (uint) {
 }
 
 
-    function proposeStake(uint _matchID, uint _stake) validMatch(_matchID) public {
+    function proposeStake(uint _matchID, uint _stake) checkValidityIdMatch(_matchID) public {
         Battle storage matchInstance = gamesArray[_matchID];
         require(matchInstance.playerX == msg.sender || matchInstance.playerY == msg.sender, "Unauthorized player");
 
@@ -239,7 +238,7 @@ function findJoinableMatch() private view returns (uint) {
     *         Upon successful stake acceptance, the match's stake is updated with the temporary stake.
     *         An event is emitted to indicate the stake has been decided.
     */
-    function acceptStake(uint _matchID) public validMatch(_matchID) onlyPlayer(_matchID) temporaryStakeSet(_matchID) {
+    function acceptStake(uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) temporaryStakeSet(_matchID) {
         
 
         Battle storage matchIstance = gamesArray[_matchID];
@@ -262,7 +261,7 @@ function findJoinableMatch() private view returns (uint) {
     * @notice Reverts if the match ID is invalid, players are not set for the match, or sender is not a player of the match.
     * @param _matchID The ID of the match to send Ether to.
     */
-    function payStake(uint _matchID) public payable validMatch(_matchID) onlyPlayer(_matchID) {
+    function payStake(uint _matchID) public payable checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
 
         // Check if sent Ether stake is greater than 0
         require(msg.value > 0, "Eth is 0!");
@@ -281,7 +280,7 @@ function findJoinableMatch() private view returns (uint) {
         * @param _attackedRow The row of the attack.
         * @param _attackedCol The column of the attack.
         */
-    function attackOpponent(uint _matchID, uint256 _attackedRow, uint256 _attackedCol) public validMatch(_matchID) onlyPlayer(_matchID) {
+    function attackOpponent(uint _matchID, uint256 _attackedRow, uint256 _attackedCol) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
             
             Battle storage matchIstance = gamesArray[_matchID];
 
@@ -305,7 +304,7 @@ function findJoinableMatch() private view returns (uint) {
     * @param _merkleroot The merkle root hash of the player's match data.
     * @param _matchID The unique identifier of the match.
     */
-    function registerMerkleRoot(bytes32 _merkleroot, uint _matchID) public validMatch(_matchID) onlyPlayer(_matchID) {
+    function registerMerkleRoot(bytes32 _merkleroot, uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
 
         // Get the reference to the match data using the match ID
         Battle storage matchData = gamesArray[_matchID];
@@ -335,7 +334,7 @@ Then, it calculates a Merkle root based on the provided Merkle proof and compare
 Depending on whether the Merkle roots match or not, the function processes the attack, updates ship counts, and handles cheating situations. 
 Finally, it checks for match completion conditions and transfers rewards if applicable while mitigating reentrancy vulnerabilities.
 */
-    function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public validMatch(_matchID) onlyPlayer(_matchID) matchNotStarted(_matchID) {
+    function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) matchNotStarted(_matchID) {
         // get the match instance form gamesArray
         Battle storage matchInstance = gamesArray[_matchID];
 
@@ -450,7 +449,7 @@ function getWinnerAndLoser(Battle storage matchInstance, address cheater) intern
     *         - A matchFinished event if cheating is detected and rewards are transferred.
     *         - A matchFinished event if the verification is successful and rewards are transferred.
     */
-    function verifyBoard(uint _matchID, int256[] memory _cells) public validMatch(_matchID) onlyPlayer(_matchID) {
+    function verifyBoard(uint _matchID, int256[] memory _cells) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
 
         Battle storage matchInstance = gamesArray[_matchID];
         address winner;
@@ -513,7 +512,7 @@ function getWinnerAndLoser(Battle storage matchInstance, address cheater) intern
 
 
    
-    function accuseOpponent(uint _matchID) public validMatch(_matchID) onlyPlayer(_matchID) {
+    function accuseOpponent(uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
     Battle storage matchInstance = gamesArray[_matchID];
 
     // Check if the match has already ended
