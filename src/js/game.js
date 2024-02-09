@@ -243,7 +243,7 @@ App = {
         console.log("[JoinRandomGame " + matchID + "] Initial stake:", ethStake);
         if (ethStake === null || ethStake <= 0) {
 
-          //show the rival proposal
+          // show the rival proposal
           $("#opponentProposal").show();
 
           // set red as others when there is a different stake
@@ -489,8 +489,9 @@ App = {
 
   }
   },
-
-  SendAttack: function (row, col) {
+  // send attack taking raw cols as coordinates
+  /*
+  attackMove: function (row, col) {
   try {
     // Send attack to contract
     App.contracts.Battleship.deployed().then(async function (instance) {
@@ -517,7 +518,7 @@ App = {
 
       Toast.fire({
         icon: 'success',
-        title: 'Torpedo launched! Wait your turn!'
+        title: 'SHOT SEND!'
       });
 
       // Disable opponent grid interaction
@@ -534,6 +535,62 @@ App = {
     alertFire('Error', 'Contract reported error: ' + error.message, 'error', false, 0);
     
   }
+  },
+  */
+
+  attackMove: async function (row, col) {
+    try {
+      const instance =  await App.contracts.Battleship.deployed();
+      const receipt =  await instance.attackOpponent(matchID, row, col);
+  
+      // Log attack details
+      attackedCol = col;
+      attackedRow = row;
+      console.log(`[SendAttack ${matchID}] from ${web3.eth.defaultAccount} on opponentGrid([${row}][${col}])`);
+  
+      // Show success toast
+      showSuccessToastEvent();
+  
+      // Disable opponent grid interaction and enable report button
+      toggleGridInteractionEvent(false);
+      toggleReportButtonEvent(true);
+    } catch (error) {
+      console.error(error);
+      // Show error message
+      showAlertErrorEvent(error.message);
+    }
+  },
+  
+  showSuccessToastEvent: function () {
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-center',
+      showConfirmButton: true,
+      timer: 6000,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+      }
+    });
+  
+    Toast.fire({
+      icon: 'success',
+      title: 'Torpedo launched! Wait your turn!'
+    });
+  },
+  
+  toggleGridInteractionEvent: function (enable) {
+    const opponentGrid = document.getElementById('computerGrid');
+    opponentGrid.style.pointerEvents = enable ? 'auto' : 'none';
+  },
+  
+  toggleReportButtonEvent: function (enable) {
+    document.getElementById('report-button').disabled = !enable;
+  },
+  
+  showAlertErrorEvent: function (errorMessage) {
+    alertFire('Error', `Contract reported error: ${errorMessage}`, 'error', false, 0);
   },
 
   
@@ -1035,7 +1092,7 @@ $(function () {
     
         targetGrid = computerGrid;
         targetFleet = computerFleet;
-        App.SendAttack(x,y);
+        App.attackMove(x,y);
 
         targetGrid.updateCell(x, y, 'miss', targetPlayer);
         return CONST.TYPE_MISS;
