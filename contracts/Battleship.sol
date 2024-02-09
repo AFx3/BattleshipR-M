@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.22 < 0.9.0;
+pragma solidity >=0.4.22 < 0.9.0; //okk version
 
+// define the contract
 contract Battleship {
 
 
-    // Struct to represent a match between two players
+    // Struct to represent a match 
     struct Battle {
         address playerX;             // Address of player A
         address playerY;             // Address of player B
@@ -30,27 +31,25 @@ contract Battleship {
      //Array of matches
     Battle[] public gamesArray;
 
-    // Count of active matches
+    // Counter for active matches
     uint public currentGames = 0;
 
 
-
+    // ensure the match ID is valid
     modifier checkValidityIdMatch(uint _matchID) {
-        // require the provided match ID is within valid range
         require(_matchID < gamesArray.length, "Invalid match ID");
         _;
     }
 
-
+    // ensure the sender is one of the players in a specific match
     modifier onlyPlayer(uint _matchID) {
-        // Ensure the sender is one of the players in the specified match
         require(gamesArray[_matchID].playerX == msg.sender || gamesArray[_matchID].playerY == msg.sender, "Unauthorized player");
         _;
     }
 
-
-    modifier matchNotStarted(uint _matchID) {
-        // Ensure both players have provided their merkle roots, indicating match start
+     // Ensure both players have provided their merkle roots, indicating match start
+    modifier merkleRootProvided(uint _matchID) {
+       
         require(gamesArray[_matchID].startedMatch == true, "Match not started");
         _;
     }
@@ -338,7 +337,7 @@ Then, it calculates a Merkle root based on the provided Merkle proof and compare
 Depending on whether the Merkle roots match or not, the function processes the attack, updates ship counts, and handles cheating situations. 
 Finally, it checks for match completion conditions and transfers rewards if applicable while mitigating reentrancy vulnerabilities.
 */
-    function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) matchNotStarted(_matchID) {
+    function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) merkleRootProvided(_matchID) {
         // get the match instance form gamesArray
         Battle storage matchInstance = gamesArray[_matchID];
 
