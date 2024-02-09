@@ -26,6 +26,15 @@ contract Battleship {
         address currentPlayerTurn;   // Address of the player whose turn it is
     }
 
+
+     //Array of matches
+    Battle[] public gamesArray;
+
+    // Count of active matches
+    uint public currentGames = 0;
+
+
+
     modifier checkValidityIdMatch(uint _matchID) {
         // require the provided match ID is within valid range
         require(_matchID < gamesArray.length, "Invalid match ID");
@@ -73,8 +82,6 @@ contract Battleship {
     // Event to output a uint value
     event newMatchCreated(address indexed _proposer,uint _assignedMatchID);
 
-    // Custom error event
-    //error ErrorOut(string err);
 
     // Event to signal the official start of the match
     event matchStarted(uint indexed _matchID, address indexed _playerX, address indexed _playerY);
@@ -96,11 +103,7 @@ contract Battleship {
 
 
     
-    //Array of matches
-    Battle[] public gamesArray;
-
-    // Count of active matches
-    uint public currentGames = 0;
+   
 
 
 
