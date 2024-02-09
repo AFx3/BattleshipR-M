@@ -490,54 +490,6 @@ App = {
   }
   },
   // send attack taking raw cols as coordinates
-  /*
-  attackMove: function (row, col) {
-  try {
-    // Send attack to contract
-    App.contracts.Battleship.deployed().then(async function (instance) {
-      let battleshipInstance = instance;
-      let receipt = await battleshipInstance.attackOpponent(matchID, row, col);
-
-      // Log attack details
-      attackedCol = col;
-      attackedRow = row;
-      console.log("[SendAttack " + matchID + "] from " + web3.eth.defaultAccount + " on opponentGrid([" + row + "][" + col + "])");
-
-      // Show success toast
-      const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-center',
-        showConfirmButton: true,
-        timer: 6000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-          toast.addEventListener('mouseenter', Swal.stopTimer);
-          toast.addEventListener('mouseleave', Swal.resumeTimer);
-        }
-      });
-
-      Toast.fire({
-        icon: 'success',
-        title: 'SHOT SEND!'
-      });
-
-      // Disable opponent grid interaction
-      const opponentGrid = document.getElementById('computerGrid');
-      opponentGrid.style.pointerEvents = 'none';
-
-      // Enable report button
-      document.getElementById('report-button').disabled = false;
-    });
-  } catch (error) {
-    console.error(error);
-
-    // Show error message
-    alertFire('Error', 'Contract reported error: ' + error.message, 'error', false, 0);
-    
-  }
-  },
-  */
-
   attackMove: async function (row, col) {
     try {
       const instance =  await App.contracts.Battleship.deployed();
@@ -593,13 +545,13 @@ App = {
     alertFire('Error', `Contract reported error: ${errorMessage}`, 'error', false, 0);
   },
 
-  
 
   submitProofAttack: function (attackResult, hash, merkleProof) {
     try {
       // Get Battleship contract instance
       App.contracts.Battleship.deployed().then(function (instance) {
         battleshipInstance = instance;
+
         return battleshipInstance.submitAttackProof(matchID, attackResult, hash, merkleProof);
       }).then(function (receipt) {
         // Submission successful
@@ -614,30 +566,45 @@ App = {
     }
   },
 
-  
+  // check the board when a player has no more ships
+  checkBoard: function () {
+
+  // array to store modified cells
+  var newCells = [];
+  // iterate each row of the grid
+  for (var i = 0; i < playerGrid.cells.length; i++) {
+    var newRow = [];
+    // iterate over each cell in the current row
+    for (var j = 0; j < playerGrid.cells[i].length; j++) {
+      // check
+      if (playerGrid.cells[i][j] > 1) {
+        // push 1 to the newRow array
+        newRow.push(1);
+      } else {
+        // push the current cell value to the newRow array
+        newRow.push(playerGrid.cells[i][j]);
+      }
+    }
+    newCells.push(newRow);
+  }
+  // update grid cells of the player with the modified cells
+  playerGrid.cells = newCells;
 
 
-  sendBordVerification: function () {
-
-  //Retrieve original configuration, without hitted positions
-  //This allows to recompute the original Merkle Tree on contract-side
-  playerGrid.cells = playerGrid.cells.map(row =>
-      row.map(cell => (cell > 1 ? 1 : cell))
-  );
-
-  console.log("[sendBordVerification " + matchID + "] Sending board for verification: ", playerGrid.cells);
+  console.log("[checkBoard " + matchID + "] Sending board for verification: ", playerGrid.cells);
 
     try {
-      // Get Battleship contract instance
+      // get Battleship contract instance
       App.contracts.Battleship.deployed().then(function (instance) {
         battleshipInstance = instance;
+        // put verifyBoard res on the contract instance with matchID and flattened cells 
         return battleshipInstance.verifyBoard(matchID, playerGrid.cells.flat());
       }).then(function (receipt) {
-        // Submission successful
+        // okk
       }).catch(function (err) {
         console.error(err);
-        // Show error message
-        alertFire('Error', 'Contract reported error: ' + err.message, 'error', false, 0);
+        // error
+        alertFire('Error', 'Code: ' + err.message, 'error', false, 0);
        
       });
     } catch (error) {
@@ -836,7 +803,7 @@ App = {
                     if(events.args._winnerAddr == web3.eth.defaultAccount){
 
                       alertFire('You destroyed all enemy ships!','Sending the board for verification. Wait to see if you won the match!', 'question', false, 0);
-                      App.sendBordVerification();
+                      App.checkBoard();
 
                   } else if(events.args._loserAddr == web3.eth.defaultAccount) {
 
@@ -904,7 +871,7 @@ App = {
 
                             alertFire('You destroyed all enemy ships!', 'Sending the board for verification. Wait to see if you won the match!', 'question', false, 0);
                               
-                            App.sendBordVerification();
+                            App.checkBoard();
 
           
 
