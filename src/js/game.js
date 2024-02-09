@@ -501,8 +501,13 @@ App = {
       
       for (let i = 0; i < leafNodes.length; i += 2) {
         let leftChild = leafNodes[i];
-        let rightChild = (i + 1 < leafNodes.length) ? leafNodes[i + 1] : leftChild;
-        
+      
+        let rightChild;
+          if (i + 1 < leafNodes.length) {
+            rightChild = leafNodes[i + 1];
+          } else {
+            rightChild = leftChild;
+          }
         let combinedHash = window.web3Utils.keccak256(xor(String(leftChild), String(rightChild)));
         lastLevel.push(combinedHash);
       }
