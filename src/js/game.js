@@ -483,53 +483,47 @@ App = {
   },
 
   generateMerkleTree: async function (playerGrid) {
-    
+    // flatten the grid cells
     let boardForMT = playerGrid.cells.flat();
 
-    let leafNodes = boardForMT.map(cellState => {
-      let salt = BigInt(Math.floor(Number(generateSecure128BitInteger()) * playerGrid.size));
-
-      const value = window.web3Utils.keccak256(String(cellState) + String(salt));
-
-      return value;
+    // generate leaf nodes using hashed vales
+    let leafNodes = boardForMT.map(cellState => { 
+      let salt = BigInt(Math.floor(Number(generateSecure128BitInteger()) * playerGrid.size)); // generate a random salt
+      
+      // concatenate the cell state and salt, then hash the result
+      const val = window.web3Utils.keccak256(String(cellState) + String(salt));
+      return val;
     });
 
-    merkleTreeLevels = [leafNodes];
-
+    merkleTreeLevels = [leafNodes]; // array to store the LEVELS of the MT
+    // build MT
     while (leafNodes.length > 1) {
       let lastLevel = [];
-      
+
+      // iterate through leaf nodes pairwise to compute parent nodes
       for (let i = 0; i < leafNodes.length; i += 2) {
+
         let leftChild = leafNodes[i];
-      
         let rightChild;
           if (i + 1 < leafNodes.length) {
             rightChild = leafNodes[i + 1];
           } else {
             rightChild = leftChild;
           }
-        let combinedHash = window.web3Utils.keccak256(xor(String(leftChild), String(rightChild)));
-        lastLevel.push(combinedHash);
-      }
 
+         // combine the hashes of left and right children 
+        let combinedHash = window.web3Utils.keccak256(xor(String(leftChild), String(rightChild)));
+        lastLevel.push(combinedHash); // push the combined hash to the last level
+      }
+      // udate leaf nodes with the parent nodes
       leafNodes = lastLevel;
+      // store the current level in the Merkle tree levels array
       merkleTreeLevels.push(leafNodes);
     }
-
-
-    return leafNodes[0]; 
-
-
-  
-  
-  
+    return leafNodes[0]; // ROOT of the MT
   },
 
-
-
-
-
-  
+  /*
   generateMerkleProof: function (row, col) {
 
     var merkleProof = [];
@@ -545,8 +539,30 @@ App = {
   
     return merkleProof;
 
-  },
+  },*/
   
+  generateMerkleProof: function(row, col) {
+    var merkleProof = [];
+    let flatIndex = row * playerGrid.size + col;
+  
+    // Iterate through the Merkle tree levels
+    for (var arr of merkleTreeLevels) {
+      // Check if the current level has more than one node
+      if (arr.length > 1) {
+        // Determine the index of the sibling node
+        let siblingIndex = flatIndex % 2 === 0 ? flatIndex + 1 : flatIndex - 1;
+        
+        // Add the sibling node to the proof
+        merkleProof.push(arr[siblingIndex].toString());
+        
+        // Update the flat index to the parent node
+        flatIndex = Math.floor(flatIndex / 2);
+      }
+    }
+  
+    return merkleProof;
+  },
+
 
   submitProofAttack: function (attackResult, hash, merkleProof) {
     try {
