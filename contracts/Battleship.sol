@@ -204,6 +204,7 @@ contract Battleship {
 
 
 // function to join a RANDOM MATCH (a game must be created)
+
     function JoinRandom() public {
         // need available matches
         require(currentGames > 0, "No available matches!");
@@ -240,52 +241,51 @@ contract Battleship {
 
     
 
-
+    // function to propose a stake for a specific match (1st step for the amont of eth)
     function proposeStake(uint _matchID, uint _stake) checkValidityIdMatch(_matchID) public {
+
+        // get the match instance from the gamesArray based on ID
         Battle storage matchInstance = gamesArray[_matchID];
+
+        // ensure that the sender is one of the players in the match
         require(matchInstance.playerX == msg.sender || matchInstance.playerY == msg.sender, "Unauthorized player");
 
+        // set the proposed stake amount for the match
         matchInstance.stakeProposal = _stake;
+        // set the sender's address as the stake proposer
         matchInstance.stakeProposer = msg.sender;
-
+        //notify that a stake proposal has been made
         emit stakeProposal(_matchID, _stake, msg.sender);
     }
 
 
-
-    /**
-    * @dev Accepts a stake for a match.
-    * @param _matchID The ID of the match for which the stake is being accepted.
-    * @notice This function allows players to commit their stakes for a match, provided certain conditions are met.
-    *         The match must exist, both players must have joined, and the sender must be one of the players.
-    *         The requester's address must be valid and not the same as the sender's.
-    *         The match's stake must not be set yet, and the temporary stake must be decided.
-    *         Upon successful stake acceptance, the match's stake is updated with the temporary stake.
-    *         An event is emitted to indicate the stake has been decided.
-    */
+    // function to accept the proposed stake for a specific match (2nd step for the amont of eth)
     function acceptStake(uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) stakeVariable(_matchID) {
         
-
+        // get the match instance from the gamesArray based on ID
         Battle storage matchIstance = gamesArray[_matchID];
-        require(matchIstance.stakeProposer != msg.sender, "Cannot accept your own stake");
+        // ensure that the sender is not the stake proposer
+        require(matchIstance.stakeProposer != msg.sender, "It' your stake, nisba!");
+        // Set the stake amount for the match to the proposed stake
         matchIstance.stake = matchIstance.stakeProposal;
 
+        // notify that the stake proposal has been accepted
         emit stakeAccepted(_matchID, matchIstance.stake);
     }
 
+/* function allowing players to send eth as a stake for a match (given the ID).
+Ensure:
+1) match ID provided is valid 
+2) sender of transaction is one of the players in the match
+3) the sent Ether stake is greater than 0.
 
+If ok -> update the player's eth stake (based on sender add)
 
-    /**
-    * @dev Send Ether to a specific match for the specified player.
-    * @param _matchID The ID of the match.
-    *                The match ID should be less than the total number of games (matchList.length).
-    * @notice This function allows players to send Ether to a specific match they are part of.
-    *         Players must be registered for the match and only one of the match's players can send Ether at a time.
-    *         Ether sent will be added to the player's balance for the match.
-    * @notice This function requires a non-zero stake of Ether to be sent.
-    * @notice Reverts if the match ID is invalid, players are not set for the match, or sender is not a player of the match.
-    * @param _matchID The ID of the match to send Ether to.
-    */
+If sender is player X -> eth is added to player X's stake (stakeX).
+If sender is player Y -> eth is added to player Y's stake (stakeY).
+
+*/
+
     function payStake(uint _matchID) public payable checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
 
         // Check if sent Ether stake is greater than 0
@@ -293,71 +293,77 @@ contract Battleship {
 
         // Update the corresponding player's Ether stake
         if (gamesArray[_matchID].playerX == msg.sender) {
-            gamesArray[_matchID].stakeX += msg.value; // Use "+=" to add the sent Ether to existing balance
+            gamesArray[_matchID].stakeX += msg.value; 
         } else {
             gamesArray[_matchID].stakeY += msg.value; 
         }
     }
 
-    /**
-        * @dev Allows a player to attack their opponent in the specified match.
-        * @param _matchID The ID of the match.
-        * @param _attackedRow The row of the attack.
-        * @param _attackedCol The column of the attack.
-        */
+
+// manage the attacks, account for timeout,
+
     function attackOpponent(uint _matchID, uint256 _attackedRow, uint256 _attackedCol) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
-            
+            // get the match instance from the gamesArray based on ID
             Battle storage matchIstance = gamesArray[_matchID];
 
-            // Check if it's the sender's turn to attack
+            // require it is the sender's turn to attack
+            // checks if it's the sender's turn to attack by comparing the current player turn with the sender's address
             require(matchIstance.currentPlayerTurn == msg.sender, "Not your turn to attack");
 
-            // Reset accused player and timeout
+            // reset accused player and timeout
             matchIstance.accusedOpponent = address(0);
             matchIstance.timeoutForAccusation = 0;
 
+            // determine the opponent based on the sender's address
             address opponent = (matchIstance.playerX == msg.sender) ? matchIstance.playerY : matchIstance.playerX;
 
-            // Emit the attack event and update player turn
+            // emit the attack event 
             emit attackPerformed(_matchID, msg.sender, opponent, _attackedRow, _attackedCol);
+            // update player turn
             matchIstance.currentPlayerTurn = opponent;
         }
 
 
-    /**
-    * @dev Records the provided merkle root for a player in a match, indicating readiness to start the match.
-    * @param _merkleroot The merkle root hash of the player's match data.
-    * @param _matchID The unique identifier of the match.
-    */
-    function registerMerkleRoot(bytes32 _merkleroot, uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
+   // function to register the Merkle root for a specific matc by the id
 
-        // Get the reference to the match data using the match ID
+    function registerMerkleRoot(bytes32 _merkleroot, uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
+        // get the match instance from the gamesArray based on ID
         Battle storage matchData = gamesArray[_matchID];
 
-        // Update the appropriate player's merkle root based on the sender
+        // if the sender of transaction is the  playerX
         if (msg.sender == matchData.playerX) {
+            // set the merkel root for playerX 
             matchData.merkleX = _merkleroot;
         } else {
+            // set the merkel root for playerY
             matchData.merkleY = _merkleroot;
         }
 
-        // Check if both players have provided their merkle roots to start the match
+        // if both players have provided their merkle roots to start the match (spawn a Tr)
         if (matchData.merkleY != 0 && matchData.merkleX != 0) {
-
+            // set the flag for match start
             matchData.startedMatch = true;
-
-            // Emit an event indicating that the match has started
+            // emit the match has started
             emit matchStarted(_matchID, matchData.playerX, matchData.playerY);
         }
     }
 
 
 /* 
-handles the submission of an attack proof for a specific match identified by _matchID. 
-The function first verifies that the match is valid, the sender is one of the players, and the match hasn't started yet. 
-Then, it calculates a Merkle root based on the provided Merkle proof and compares it with the Merkle root of the attacking player. 
-Depending on whether the Merkle roots match or not, the function processes the attack, updates ship counts, and handles cheating situations. 
-Finally, it checks for match completion conditions and transfers rewards if applicable while mitigating reentrancy vulnerabilities.
+Function for submit of an attack proof (specific ID match) 
+needs:
+1) match must be valid, 
+2) sender is one of the players
+3) the match hasn't started yet
+operations:
+4) Calculates a Merkle root based on the provided Merkle proof 
+5) compares it with the merkle root of the attacking player
+
+IF Merkle roots match -> do the attack
+                         updates ship counts
+
+6) check the match is ended 
+7) transfers money to the winner
 */
     function submitAttackProof(uint _matchID, uint8 _attackResult, bytes32 _attackHash, bytes32[] memory merkleProof) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) merkleRootProvided(_matchID) {
         // get the match instance form gamesArray
@@ -425,15 +431,6 @@ Finally, it checks for match completion conditions and transfers rewards if appl
             emit matchFinished(_matchID, winner, msg.sender, "No more ships left!");
         }
 
-        // reentrancy vuln mitigation with cheater set to false before transferring founds
-        // if try to attack explointing the flag, will not succeed as state change occurs 
-        // before the external call to transfer()
-        /*
-        if (cheaterDetected && winner != address(0)) {
-            // Set the flag before the transfer
-            cheaterDetected = false; // Reset the flag after the transfer is complete
-            payable(winner).transfer(matchInstance.stake * 2);
-        }*/
     }
 
 
