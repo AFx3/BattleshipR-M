@@ -484,10 +484,9 @@ App = {
 
   generateMerkleTree: async function (playerGrid) {
     
-  
-    let flattenBoard = playerGrid.cells.flat();
+    let boardForMT = playerGrid.cells.flat();
 
-    let leafNodes = flattenBoard.map(cellState => {
+    let leafNodes = boardForMT.map(cellState => {
       let salt = BigInt(Math.floor(Number(generateSecure128BitInteger()) * playerGrid.size));
 
       const value = window.web3Utils.keccak256(String(cellState) + String(salt));
