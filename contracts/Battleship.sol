@@ -97,70 +97,71 @@ contract Battleship {
     event winnerIs(uint indexed _matchID,address _winnerAddr, string _cause);
 
 
-    
    
 
 
-
+    // create a new match with specified board size and number of ships
     function NewMatch(uint _boardSize, uint _numberOfShips) public validSize(_boardSize) {
-    // Create a new Battle instance
-    Battle memory newMatch;
 
-    // Set properties of the new match
-    newMatch.playerX = msg.sender;
-    newMatch.playerY = address(0);
-    newMatch.joinableMatch = true;
-    newMatch.startedMatch = false;
-    newMatch.boardSize = _boardSize;
-    newMatch.stake = 0;
-    newMatch.stakeProposer = address(0);
-    newMatch.stakeProposal = 0;
-    newMatch.merkleX = 0;
-    newMatch.merkleY = 0;
-    newMatch.stakeX = 0;
-    newMatch.stakeY = 0;
-    newMatch.NumShipsX = _numberOfShips;
-    newMatch.NumShipsY = _numberOfShips;
-    newMatch.fixedShipsNumber = _numberOfShips;
-    newMatch.timeoutForAccusation = 0;
-    newMatch.accusedOpponent = address(0);
-    newMatch.currentPlayerTurn = msg.sender;
+        // Create a new Battle instance
+        Battle memory newMatch;
 
-    // Push the new match to the gamesArray
-    gamesArray.push(newMatch);
+        // set match parameters
+        newMatch.playerX = msg.sender;
+        newMatch.playerY = address(0);
+        newMatch.joinableMatch = true;
+        newMatch.startedMatch = false;
+        newMatch.boardSize = _boardSize;
+        newMatch.stake = 0;
+        newMatch.stakeProposer = address(0);
+        newMatch.stakeProposal = 0;
+        newMatch.merkleX = 0;
+        newMatch.merkleY = 0;
+        newMatch.stakeX = 0;
+        newMatch.stakeY = 0;
+        newMatch.NumShipsX = _numberOfShips;
+        newMatch.NumShipsY = _numberOfShips;
+        newMatch.fixedShipsNumber = _numberOfShips;
+        newMatch.timeoutForAccusation = 0;
+        newMatch.accusedOpponent = address(0);
+        newMatch.currentPlayerTurn = msg.sender;
 
-    // Increment the count of open games
-    currentGames++;
+        // insert the new match to the gamesArray
+        gamesArray.push(newMatch);
 
-    // Emit an event to indicate the creation of a new match
-    emit newMatchCreated(msg.sender, gamesArray.length-1);
-}
+        // increment the counter for active matches
+        currentGames++;
 
-
-
+        // output an event for the creation of a new match
+        emit newMatchCreated(msg.sender, gamesArray.length-1);
+    }
 
 
-    
-
-
-
- 
+    // define function to join a specific match by match ID
     function JoinMatch(uint _matchID) checkValidityIdMatch(_matchID) public {
 
+        // matchInstance is a reference as type Battle to the specific match ID
+        // with storage matchInstance points to the blockchain (not a copy of the data)
         Battle storage matchIstance = gamesArray[_matchID];
+
+        // check if the match is joinable
         require(currentGames > 0, "No available matches!");
 
         uint returnIndex = _matchID;
 
+        // check conditions before allowing a player to join the match
         require(matchIstance.playerX != address(0), "No player in this match");
         require(matchIstance.playerY == address(0), "Both players already joined");
         require(matchIstance.joinableMatch, "Match not joinable");
         require(matchIstance.playerX != msg.sender, "You are already in this match");
 
+        // set the match as no longer joinable and assign the current player (msg.sender) as playerY
         matchIstance.joinableMatch = false;
         matchIstance.playerY = msg.sender;
+        // so decrement the count of available matches
         currentGames--;
-
+        
+        // send event to notify the players have joined the match
         emit playersJoined(
             matchIstance.playerX,
             matchIstance.playerY,
@@ -171,22 +172,61 @@ contract Battleship {
         );
     }
 
-  
+    // define a private function to find a joinable match
+
+    function findJoinableMatch() private view returns (uint) {
+
+        bytes32 rand = randomValue(); 
+        // convert it to a valid index within the range of active matches
+        uint remainingIndex = uint(rand) % currentGames + 1; 
+
+        // Iterate through the match list to find a joinable match.
+        for (uint i = 0; i < gamesArray.length; i++) {
+            // check if the current match is joinable
+            if (gamesArray[i].joinableMatch) { 
+                // if the remaining index is 1 -> found the desired match
+                if (remainingIndex == 1) { 
+                    // return the index of the joinable match
+                    return i; 
+                }
+                // decrement the remaining index if the current match is not joinable
+                remainingIndex--; 
+            }
+        }
+        return gamesArray.length; // No joinable match found, return the length of the match list.
+    }
+    // function for random value
+    function randomValue() private view returns (bytes32) {
+        // uses th hash of the current block and the random number from the beacon chain
+        bytes32 randValue = keccak256(abi.encodePacked(blockhash(block.number), block.timestamp, block.basefee));
+        return randValue;
+    }
+
+
+// function to join a RANDOM MATCH (a game must be created)
     function JoinRandom() public {
+        // need available matches
         require(currentGames > 0, "No available matches!");
 
+        // find a joinable match and store its index in returnIndex
         uint returnIndex = findJoinableMatch();
 
+        // a valid match index is returned
         require(returnIndex < gamesArray.length, "No available matches!");
 
+        // cccess the matched game using its index and store it in matchedGame
         Battle storage matchedGame = gamesArray[returnIndex];
+
+        // the current player (msg.sender) is not already in the match
         require(matchedGame.playerX != msg.sender, "You are already in this match");
 
-
+        // assign the current player (msg.sender) as playerY and mark the match as no longer joinable
         matchedGame.playerY = msg.sender;
         matchedGame.joinableMatch = false;
+        // decrement the counter
         currentGames--;
 
+        // emit event s.t. players have joined the match
         emit playersJoined(
             matchedGame.playerX,
             matchedGame.playerY,
@@ -198,21 +238,7 @@ contract Battleship {
     }
 
 
-function findJoinableMatch() private view returns (uint) {
-    bytes32 rand = randomValue(); // Get a random value.
-    uint remainingIndex = uint(rand) % currentGames + 1; // Convert it to a valid index within the range of active matches.
-
-    // Iterate through the match list to find a joinable match.
-    for (uint i = 0; i < gamesArray.length; i++) {
-        if (gamesArray[i].joinableMatch) { // Check if the current match is joinable.
-            if (remainingIndex == 1) { // If the remaining index is 1, we've found the desired match.
-                return i; // Return the index of the joinable match.
-            }
-            remainingIndex--; // Decrement the remaining index if the current match is not joinable.
-        }
-    }
-    return gamesArray.length; // No joinable match found, return the length of the match list.
-}
+    
 
 
     function proposeStake(uint _matchID, uint _stake) checkValidityIdMatch(_matchID) public {
@@ -571,11 +597,7 @@ function getWinnerAndLoser(Battle storage matchInstance, address cheater) intern
 
 
 
-    function randomValue() private view returns (bytes32) {
-        // Utilizza l'hash del blocco corrente e il numero casuale della beacon chain
-        bytes32 randValue = keccak256(abi.encodePacked(blockhash(block.number), block.timestamp, block.basefee));
-        return randValue;
-    }
+    
 }
 
 
