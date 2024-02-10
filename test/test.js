@@ -46,7 +46,7 @@ contract("Compute gas opponent", (accounts) => {
       let matchId;
   
       before(async () => {
-        const tx = await battleship.NewMatch(board.size, board.shipNumber, { from: playerX });
+        const tx = await battleship.createMatch(board.size, board.shipNumber, { from: playerX });
         matchId = tx.logs[0].args._assignedMatchID;
       });
   
@@ -71,7 +71,7 @@ contract("Compute gas opponent", (accounts) => {
   
       it("Wait 5 blocks", async () => {
         for (let i = 0; i < 5; i++) {
-          await battleship.NewMatch(board.size, board.shipNumber, { from: playerX });
+          await battleship.createMatch(board.size, board.shipNumber, { from: playerX });
         }
         const tx = await battleship.accuseOpponent(matchId, { from: playerX });
         data.accuseOpponent = tx.receipt.gasUsed;
@@ -97,10 +97,10 @@ contract("Compute gas cost", (accounts) => {
 
   before(async () => {
     // Create game
-    const tx = await battleship.NewMatch(board.size, board.shipNumber, {from: playerX,});
+    const tx = await battleship.createMatch(board.size, board.shipNumber, {from: playerX,});
     matchId = tx.logs[0].args._assignedMatchID;
 
-    data.NewMatch = tx.receipt.gasUsed;
+    data.createMatch = tx.receipt.gasUsed;
 
     // check if the event is fired
     truffleAssert.eventEmitted(tx, "newMatchCreated", (ev) => {
@@ -116,7 +116,7 @@ contract("Compute gas cost", (accounts) => {
     // Don't really know where to put this if not here
     it("Create game and join randomly", async () => {
       // Create game
-      await battleship.NewMatch(board.size, board.shipNumber, {
+      await battleship.createMatch(board.size, board.shipNumber, {
         from: playerX,
       });
 

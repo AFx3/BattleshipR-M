@@ -104,7 +104,7 @@ contract Battleship {
     event winnerIs(uint indexed _matchID,address _winnerAddr, string _cause);
 
     // create a new match with specified board size and number of ships
-    function NewMatch(uint _boardSize, uint _numberOfShips) public validSize(_boardSize) {
+    function createMatch(uint _boardSize, uint _numberOfShips) public validSize(_boardSize) {
 
         // Create a new Battle instance
         Battle memory newMatch;

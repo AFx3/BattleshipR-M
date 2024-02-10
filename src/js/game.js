@@ -112,9 +112,9 @@ App = {
     
     // event when HTML doc is loaded
     $(document).ready(function() {
-      // event: when the user clicks on the new game button, call the NewMatch function to set up a new game
+      // event: when the user clicks on the new game button, call the createMatch function to set up a new game
         $("#newGameBtn").click(function() {
-          App.NewMatch();
+          App.createMatch();
           showFormAndProposal("waiting...");
 
         }); 
@@ -181,15 +181,15 @@ App = {
    // I Have 3 cases: join by ID, join random, and new game
 
    // 1st function to create a NEW MATCH
-   NewMatch: function () {
+   createMatch: function () {
     // 1) Deploy the contract instance
     App.contracts.Battleship.deployed()
       .then(async function (instance) {
 
         // Get the deployed contract instance
         battleshipInstance = instance;
-        // Call the NewMatch function on the contract to set up the new Match ID
-        return battleshipInstance.NewMatch(boardSize, numberOfShips);
+        // Call the createMatch function on the contract to set up the new Match ID
+        return battleshipInstance.createMatch(boardSize, numberOfShips);
       })
       .then(async function (receipt) {
         // Extract match ID from the event logs
