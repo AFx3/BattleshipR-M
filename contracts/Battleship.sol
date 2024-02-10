@@ -307,7 +307,7 @@ If sender is player Y -> eth is added to player Y's stake (stakeY). */
 
 
     // function to register the Merkle root for a specific matc by the id
-    function registerMerkleRoot(bytes32 _merkleroot, uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
+    function sendMerkleRoot(bytes32 _merkleroot, uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
         // get the match instance from the gamesArray based on ID
         Battle storage matchData = gamesArray[_matchID];
         // if the sender of transaction is the  playerX

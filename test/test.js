@@ -31,7 +31,7 @@ for (let i = 0; i < boardSize; i++) {
 fs.writeFileSync(gasFile, JSON.stringify({}));
 
 var merkleTreeLevels = [];
-contract("Compute gas opponent", (accounts) => {
+contract("Compute gas enemy", (accounts) => {
 
     let battleship;
     const [playerX, playerY] = accounts;
@@ -41,7 +41,7 @@ contract("Compute gas opponent", (accounts) => {
       battleship = await Battleship.deployed();
     });
   
-    describe("Report opponent and wait match end", () => {
+    describe("Report enemy", () => {
       const amount = 1000;
       let matchId;
   
@@ -54,17 +54,17 @@ contract("Compute gas opponent", (accounts) => {
         await battleship.JoinMatch(matchId, { from: playerY });
       });
   
-      it("Commit stake", async () => {
+      it("send and confirm stake", async () => {
         await battleship.proposeStake(matchId, amount, { from: playerX });
         await battleship.stakeConfirm(matchId, { from: playerY });
       });
   
-      it("Stake to contract", async () => {
+      it("Send stake to contract", async () => {
         await battleship.sendEth(matchId, { from: playerX, value: amount });
         await battleship.sendEth(matchId, { from: playerY, value: amount });
       });
   
-      it("Accuse opponent left match", async () => {
+      it("Accuse opponent", async () => {
         const tx = await battleship.accuseOpponent(matchId, { from: playerX });
         data.accuseOpponent = tx.receipt.gasUsed;
       });
@@ -77,7 +77,7 @@ contract("Compute gas opponent", (accounts) => {
         data.accuseOpponent = tx.receipt.gasUsed;
       });
   
-      it("Save gas cost", () => {
+      it("print gas", () => {
         const prev = JSON.parse(fs.readFileSync(gasFile));
         fs.writeFileSync(gasFile, JSON.stringify({ ...data, ...prev }));
       });
@@ -85,7 +85,7 @@ contract("Compute gas opponent", (accounts) => {
   });
   
 // Contract testing for computing gas cost for an 8x8 board game
-contract("Compute gas cost", (accounts) => {
+contract("Evaluate gas", (accounts) => {
   let matchId;
   const [playerX, playerY] = accounts;
   let battleship;
@@ -112,9 +112,9 @@ contract("Compute gas cost", (accounts) => {
     data.JoinMatch = tx2.receipt.gasUsed;
   });
 
-  describe("Play new match", () => {
+  describe("Play new game", () => {
     // Don't really know where to put this if not here
-    it("Create game and join randomly", async () => {
+    it("join randomly", async () => {
       // Create game
       await battleship.createMatch(board.size, board.shipNumber, {
         from: playerX,
@@ -127,20 +127,20 @@ contract("Compute gas cost", (accounts) => {
     });
 
     const amount = 1000;
-    it("Propose a stake", async () => {
+    it("Propose stake", async () => {
        
 
       const tx =  await battleship.proposeStake(matchId, amount, { from: playerX });
       data.proposeStake = tx.receipt.gasUsed;
     });
 
-    it("Opponent agree", async () => {
+    it("agree stake", async () => {
       const tx =  await battleship.stakeConfirm(matchId, { from: playerY });
 
       data.stakeConfirm = tx.receipt.gasUsed;
     });
 
-    it("Stake to the contract", async () => {
+    it("send stake to the contract", async () => {
       const tx =  await battleship.sendEth(matchId, { from: playerX, value: amount });
 
       data.sendEth = tx.receipt.gasUsed;
@@ -150,23 +150,23 @@ contract("Compute gas cost", (accounts) => {
 
     let p1_treeRoot;
     let p2_treeRoot;
-    it("Registering Merkle Root players", async () => {
+    it("Registering Merkle Root of both players", async () => {
   
       salt = Math.floor(Math.random() * board.size);
       p1_treeRoot = merkleTree(board,salt);
 
       
-      const tx = await battleship.registerMerkleRoot(p1_treeRoot, matchId, { from: playerX });
-      data.registerMerkleRoot = tx.receipt.gasUsed;
+      const tx = await battleship.sendMerkleRoot(p1_treeRoot, matchId, { from: playerX });
+      data.sendMerkleRoot = tx.receipt.gasUsed;
 
-      // same board, but different (weak) salts
+      
       p2_treeRoot = merkleTree(board,salt);
-      await battleship.registerMerkleRoot(String(p2_treeRoot), matchId, { from: playerY });
+      await battleship.sendMerkleRoot(String(p2_treeRoot), matchId, { from: playerY });
     });
 
     
 
-    it("Players attack each other", async () => {
+    it("Players shot", async () => {
         let finish = false;
         for (let i = 0; i < 8 && !finish; i++) {
             for (let j = 0; j < 8 && !finish; j++){
@@ -189,14 +189,14 @@ contract("Compute gas cost", (accounts) => {
         }
     });
 
-    it("Player one send board for verification", async () => {
+    it("PlayerX send board to be checked", async () => {
         const txVerification = await battleship.verifyBoard(matchId, board.cells.flat(), { from: playerX});
         data.verifyBoard = txVerification.receipt.gasUsed;
         truffleAssert.eventEmitted(txVerification, "winnerIs"); 
     });
 
     
-    it("Gas cost", () => {
+    it("Gas evaluation", () => {
       const prev = JSON.parse(fs.readFileSync(gasFile));
       fs.writeFileSync(gasFile, JSON.stringify({ ...data, ...prev }));
     });

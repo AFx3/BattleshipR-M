@@ -478,7 +478,7 @@ App = {
 
     // Send Merkle root to contract
     let battleshipInstance = await App.contracts.Battleship.deployed();
-    await battleshipInstance.registerMerkleRoot(merkleroot, matchID);
+    await battleshipInstance.sendMerkleRoot(merkleroot, matchID);
 
     // Show Merkle root registered message
     alertFire('Merkle root ok!', 'Wait Rival\'s merkle root...', 'success', false, 0);
