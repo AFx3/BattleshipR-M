@@ -56,7 +56,7 @@ contract("Compute gas opponent", (accounts) => {
   
       it("Commit stake", async () => {
         await battleship.proposeStake(matchId, amount, { from: playerX });
-        await battleship.acceptStake(matchId, { from: playerY });
+        await battleship.stakeConfirm(matchId, { from: playerY });
       });
   
       it("Stake to contract", async () => {
@@ -135,9 +135,9 @@ contract("Compute gas cost", (accounts) => {
     });
 
     it("Opponent agree", async () => {
-      const tx =  await battleship.acceptStake(matchId, { from: playerY });
+      const tx =  await battleship.stakeConfirm(matchId, { from: playerY });
 
-      data.acceptStake = tx.receipt.gasUsed;
+      data.stakeConfirm = tx.receipt.gasUsed;
     });
 
     it("Stake to the contract", async () => {

@@ -247,7 +247,7 @@ contract Battleship {
 
 
     // function to accept the proposed stake for a specific match (2nd step for the amont of eth)
-    function acceptStake(uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) stakeVariable(_matchID) {
+    function stakeConfirm(uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) stakeVariable(_matchID) {
         
         // get the match instance from the gamesArray based on ID
         Battle storage matchIstance = gamesArray[_matchID];

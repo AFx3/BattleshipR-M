@@ -159,7 +159,7 @@ App = {
 
            // event for the "Accept proposal" button
             $("#accept-proposal").click(function () {
-                App.AcceptStake();
+                App.stakeConfirm();
             });
 
           
@@ -275,7 +275,7 @@ App = {
           // Update UI elements
           document.getElementById('game-info').innerText = "Match ID: " + matchID;
 
-          App.AcceptStake();
+          App.stakeConfirm();
           App.event_loop();
         }
       })
@@ -375,7 +375,7 @@ App = {
     }
   },
 
-  AcceptStake: function() {
+  stakeConfirm: function() {
     if (matchID === null) {
         // Show an error message and reset the match
         alertFire('Error', 'Something went wrong!', 'error', false, 0);
@@ -386,7 +386,7 @@ App = {
         // Deploy the Battleship contract and accept the stake
         return App.contracts.Battleship.deployed().then(function(instance) {
             battleshipInstance = instance;
-            return battleshipInstance.acceptStake(matchID);
+            return battleshipInstance.stakeConfirm(matchID);
         }).then(function(receipt) {
             // Show board, hide unnecessary elements, and display betted ETH
             $("#game-container").removeAttr("hidden");
