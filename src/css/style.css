@@ -101,7 +101,7 @@ input[type=text], input[type=number] {
 input[type=number] {
 	width: 50%;
 	background-color: white;
-	background-image: url('../images/ethereum.png');
+	background-image: url('../images/rickandmortybg');
 	background-position: 10px 10px;
 	padding: 16px 25px;
 	background-repeat: no-repeat;

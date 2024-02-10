@@ -75,7 +75,7 @@ App = {
     web3.eth.defaultAccount = web3.eth.accounts[0];
 
     // get connected wallet address
-    document.getElementById('wallet-info').innerText = "Connected wallet: " + web3.eth.defaultAccount;
+    document.getElementById('wallet-info').innerText = "Your address: " + web3.eth.defaultAccount;
    
     // log the wallet address
     console.log("[INIT] Wallet address: ", web3.eth.defaultAccount);

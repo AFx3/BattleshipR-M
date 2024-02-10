@@ -4,6 +4,7 @@ const Web3Utils = require('web3-utils');
 
 const fs = require("fs");
 const gasFile = "gas_evaluation.json";
+// test parameters
 const shipNumber = 10;
 const boardSize = 8;
 
@@ -13,7 +14,7 @@ const board = {
     shipNumber: shipNumber,
 };
 
-// fill the board for the test
+// fill the board for the test 8x8
 for (let i = 0; i < boardSize; i++) {
     board.cells.push([]);
     for (let j = 0; j < boardSize; j++) {
