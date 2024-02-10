@@ -80,8 +80,11 @@ App = {
     // log the wallet address
     console.log("[INIT] Wallet address: ", web3.eth.defaultAccount);
 
-    // load parameters game
-    loadParam();
+   
+    // Game parameters
+    boardSize = 10;
+    numberOfShips = 17;
+
     return App.initContract();
   },
 
@@ -287,7 +290,8 @@ App = {
 
   // define function to join a match by id
   JoinMatchId: function (insertedGameID) {
-    // check if match ID is valid
+    welcomeMessage();
+ // check if match ID is valid
     if (insertedGameID == null || insertedGameID == undefined || insertedGameID < 0) {
 
       alertFire('Error', 'invalid match ID', 'error', false, 0);
@@ -2043,7 +2047,6 @@ function generateSecure128BitInteger() {
   return result;
 }
 
-
   // utils: Performs a bitwise XOR operation on two hexadecimal strings.
 function xor(first, second) {
     // Declare a variable `BN` and assign it the Big Number (BN) library from `window.web3Utils`.
@@ -2061,24 +2064,26 @@ function xor(first, second) {
     return result;
   }
 
+  function welcomeMessage() {
+    // Get the current date and time
+    const currentTime = new Date().toLocaleString();
 
-function loadParam() {
-  jsonFileUrl = '../bs-config.json';
-  fetch(jsonFileUrl)
-  .then(response => {
-    if (!response.ok) {
-      console.error("Cannot load game parameter, using default value: boardSize =" + boardSize + " numberOfShips = " + numberOfShips);
-    }
-    return response.json();
-  })
-  .then(data => {
-    boardSize = data.gameParam.boardSize;
-    numberOfShips = data.gameParam.numberOfShips;
-   
-  })
-  .catch(error => {
-    console.error('Error fetching or parsing JSON:', error);
-  });
+    // Get the current location
+    navigator.geolocation.getCurrentPosition(position => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const location = `Latitude: ${latitude}, Longitude: ${longitude}`;
+
+        // Construct the message
+        const message = `Welcome to the game!\nCurrent time: ${currentTime}\nLocation: ${location}`;
+
+        // Display the message
+        alert(message);
+    }, error => {
+        // Handle error if geolocation is not available
+        console.error('Error getting location:', error);
+        // If geolocation is not available, display welcome message without location
+        const message = `Welcome to the game!\nCurrent time: ${currentTime}`;
+        alert(message);
+    });
 }
-
-

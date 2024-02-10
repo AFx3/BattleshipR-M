@@ -274,7 +274,6 @@ function genMerkleProof(playerGrid, row, col) {
   }
 
 
-
 function xor(first, second) {
   const intermediate1 = BigInt(first);
   const intermediate2 = BigInt(second);
