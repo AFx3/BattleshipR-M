@@ -60,8 +60,8 @@ contract("Compute gas opponent", (accounts) => {
       });
   
       it("Stake to contract", async () => {
-        await battleship.payStake(matchId, { from: playerX, value: amount });
-        await battleship.payStake(matchId, { from: playerY, value: amount });
+        await battleship.sendEth(matchId, { from: playerX, value: amount });
+        await battleship.sendEth(matchId, { from: playerY, value: amount });
       });
   
       it("Accuse opponent left match", async () => {
@@ -120,10 +120,10 @@ contract("Compute gas cost", (accounts) => {
         from: playerX,
       });
 
-      const tx = await battleship.JoinRandom({
+      const tx = await battleship.randomGame({
         from: playerY,
       });
-      data.JoinRandom = tx.receipt.gasUsed;
+      data.randomGame = tx.receipt.gasUsed;
     });
 
     const amount = 1000;
@@ -141,10 +141,10 @@ contract("Compute gas cost", (accounts) => {
     });
 
     it("Stake to the contract", async () => {
-      const tx =  await battleship.payStake(matchId, { from: playerX, value: amount });
+      const tx =  await battleship.sendEth(matchId, { from: playerX, value: amount });
 
-      data.payStake = tx.receipt.gasUsed;
-      await battleship.payStake(matchId, { from: playerY, value: amount });
+      data.sendEth = tx.receipt.gasUsed;
+      await battleship.sendEth(matchId, { from: playerY, value: amount });
 
     });
 
@@ -171,14 +171,14 @@ contract("Compute gas cost", (accounts) => {
         for (let i = 0; i < 8 && !finish; i++) {
             for (let j = 0; j < 8 && !finish; j++){
                 try {
-                    let txAttack =  await battleship.attackOpponent(matchId, i, j, { from: playerX });
-                    data.attackOpponent = txAttack.receipt.gasUsed;
+                    let txAttack =  await battleship.shot(matchId, i, j, { from: playerX });
+                    data.shot = txAttack.receipt.gasUsed;
                     const merkleProof = genMerkleProof(board, i, j);
                     const flatIndex = i * board.size + j;
                     let txAttackProof = await battleship.submitAttackProof(matchId, String(board.cells[i][j]), String(merkleTreeLevels[0][flatIndex]), merkleProof, { from: playerY });
                     data.submitAttackProof = txAttackProof.receipt.gasUsed;
-                    txAttack =  await battleship.attackOpponent(matchId, i, j, { from: playerY });
-                    data.attackOpponent = txAttack.receipt.gasUsed;
+                    txAttack =  await battleship.shot(matchId, i, j, { from: playerY });
+                    data.shot= txAttack.receipt.gasUsed;
                     txAttackProof = await battleship.submitAttackProof(matchId, String(board.cells[i][j]), String(merkleTreeLevels[0][flatIndex]), merkleProof, { from: playerX });
                     data.submitAttackProof = txAttackProof.receipt.gasUsed;
                 } catch(error) {

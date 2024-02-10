@@ -135,7 +135,7 @@ App = {
           $("#opponentProposal").hide();
           $("#joinByIdForm").hide();
           $("#searchingGame").hide();
-          App.JoinRandom();
+          App.randomGame();
 
         });
       
@@ -224,14 +224,14 @@ App = {
   
   // 2nd function to join game randomly
 
-  JoinRandom: function () {
+  randomGame: function () {
     // Deploy the Battleship contract instance
     App.contracts.Battleship.deployed()
       .then(function (instance) {
         // Get the Battleship contract instance
         battleshipInstance = instance;
         // Call the JoinRandom function on the contract
-        return battleshipInstance.JoinRandom();
+        return battleshipInstance.randomGame();
       })
       .then(function (receipt) {
         // Extract infos from recepit
@@ -497,7 +497,7 @@ App = {
   attackMove: async function (row, col) {
     try {
       const instance =  await App.contracts.Battleship.deployed();
-      const receipt =  await instance.attackOpponent(matchID, row, col);
+      const receipt =  await instance.shot(matchID, row, col);
   
       // Log attack details
       attackedCol = col;
@@ -725,7 +725,7 @@ App = {
 
           App.contracts.Battleship.deployed().then(function (instance) {
             battleshipInstance = instance;
-            return battleshipInstance.payStake(events.args._matchID.toNumber(), { value: (ethStake) });
+            return battleshipInstance.sendEth(events.args._matchID.toNumber(), { value: (ethStake) });
           }).then(function (reciept) {
            
             $('#betted-info').text("Betted ETH: " + window.web3Utils.fromWei(ethStake.toString()) + " ETH");

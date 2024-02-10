@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 < 0.9.0; //okk version
 
-
-
-
-
 // define the contract
 contract Battleship {
 
@@ -199,7 +195,7 @@ contract Battleship {
     }
 
     // function to join a RANDOM MATCH (a game must be created)
-    function JoinRandom() public {
+    function randomGame() public {
         // need available matches
         require(currentGames > 0, "No matches found");
 
@@ -273,7 +269,7 @@ If ok -> update the player's eth stake (based on sender add)
 If sender is player X -> eth is added to player X's stake (stakeX).
 If sender is player Y -> eth is added to player Y's stake (stakeY). */
 
-    function payStake(uint _matchID) public payable checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
+    function sendEth(uint _matchID) public payable checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
 
         // check if sent Ether stake is greater than 0
         require(msg.value > 0, "no way!");
@@ -288,7 +284,7 @@ If sender is player Y -> eth is added to player Y's stake (stakeY). */
 
 
     // manage the attacks, account for timeout,
-    function attackOpponent(uint _matchID, uint256 _attackedRow, uint256 _attackedCol) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
+    function shot(uint _matchID, uint256 _attackedRow, uint256 _attackedCol) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
         // get the match instance from the gamesArray based on ID
         Battle storage matchIstance = gamesArray[_matchID];
 
