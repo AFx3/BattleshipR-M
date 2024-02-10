@@ -60,6 +60,12 @@ contract Battleship {
         require(gamesArray[_matchID].stakeProposal > 0, "Temporary stake not set");
         _;
     }
+    modifier isnotAccused(uint _matchID) {
+        // Ensure the sender is not the accused opponent in the specified match
+        require(gamesArray[_matchID].accusedOpponent != msg.sender, "impossible to accuse opponent again");
+        _;
+    }
+
     // EVENTS
     // players have joined the match
     event playersJoined(address indexed _playerX,address indexed _playerY,uint _stakeTemp ,uint indexed _matchID,uint _boardSize,uint _numberOfShips);
@@ -401,12 +407,15 @@ IF Merkle roots match -> do the attack
     }
 
 
-
+    // retreive informations about the player
     function getPlayerInfo(Battle storage matchInstance, address player) internal view returns (uint256, bytes32) {
         // return the number of ships and the MR based if the player is X || Y
+        // check if the player is playerX
         if (player == matchInstance.playerX) {
+            // if playerX -> return the #ships and MR
             return (matchInstance.NumShipsX, matchInstance.merkleX);
         } else {
+            // return palyerY stuff
             return (matchInstance.NumShipsY, matchInstance.merkleY);
         }
     }
@@ -500,63 +509,57 @@ IF Merkle roots match -> do the attack
         delete gamesArray[_matchID];
     }
 
-
-
-    function accuseOpponent(uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) {
-        Battle storage matchInstance = gamesArray[_matchID];
-
-        // check if the match has already ended
-        require(matchInstance.startedMatch == true, "Match not started yet");
-
+    // function to accuse the opponent of cheating
+    function accuseOpponent(uint _matchID) public checkValidityIdMatch(_matchID) onlyPlayer(_matchID) isnotAccused(_matchID) {
+        
+        Battle storage matchIstance = gamesArray[_matchID];
         address accusedOpponent;
-
-        // determine the accused opponent based on the sender
-        if (matchInstance.playerY == msg.sender) {
-            accusedOpponent = matchInstance.playerX;
-        } else {
-            accusedOpponent = matchInstance.playerY;
-        }
-
-        // check if the accused opponent has already been accused
-        require(matchInstance.accusedOpponent != accusedOpponent, "Opponent already accused");
 
         bool timeoutExceeded = false;
         address winner;
         address loser;
 
-        // timeout scenario
-        if (matchInstance.timeoutForAccusation != 0) {
+        // Determine the accused opponent based on the sender
+        if (matchIstance.playerY == msg.sender) {
+            accusedOpponent = matchIstance.playerX;
+        } else {
+            accusedOpponent = matchIstance.playerY;
+        }
+
+        // Handle timeout scenario
+        if (matchIstance.timeoutForAccusation != 0) {
             // Check if more than 5 blocks have passed since the notify was triggered
-            if (block.number >= matchInstance.timeoutForAccusation) {
+            if (block.number >= matchIstance.timeoutForAccusation) {
                 // Determine the winner and transfer ETH accordingly
-                if (matchInstance.accusedOpponent == matchInstance.playerY) {
-                    winner = matchInstance.playerX;
-                    loser = matchInstance.playerY;
+
+                if (matchIstance.accusedOpponent == matchIstance.playerY) {
+                    winner = matchIstance.playerX;
+                    loser = matchIstance.playerY;
                 } else {
-                    winner = matchInstance.playerY;
-                    loser = matchInstance.playerX;
+                    winner = matchIstance.playerY;
+                    loser = matchIstance.playerX;
                 }
 
                 timeoutExceeded = true;
 
                 // End the match due to timeout
-                emit winnerIs(_matchID, winner, "AFK timeout!");
+                emit winnerIs(_matchID, winner, "AFK timeout reached: match finished!");
             } else {
                 // Emit accusation notification
                 emit accuse(_matchID, accusedOpponent, msg.sender);
             }
         } else {
             // Set the timeout for accusation and record the accused opponent
-            matchInstance.timeoutForAccusation = block.number + 5;
-            matchInstance.accusedOpponent = accusedOpponent;
+            matchIstance.timeoutForAccusation = block.number + 5;
+            matchIstance.accusedOpponent = accusedOpponent;
 
             // Emit accusation notification
             emit accuse(_matchID, accusedOpponent, msg.sender);
         }
 
-        if (timeoutExceeded && winner != address(0)) {
+        if(timeoutExceeded && winner != address(0)){
             // Transfer the stake to the accused opponent
-            payable(winner).transfer(matchInstance.stake * 2);
+            payable(winner).transfer(matchIstance.stake * 2);
         }
     }
     
