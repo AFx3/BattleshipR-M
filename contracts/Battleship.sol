@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 < 0.9.0; //okk version
 
+
+
+
+
 // define the contract
 contract Battleship {
 
@@ -65,6 +69,8 @@ contract Battleship {
         require(gamesArray[_matchID].accusedOpponent != msg.sender, "impossible to accuse opponent again");
         _;
     }
+
+   
 
     // EVENTS
     // players have joined the match
@@ -564,5 +570,19 @@ IF Merkle roots match -> do the attack
     }
     
 }
+
+/* 
+gas cost eval
+{"NewMatch":243197,
+"JoinMatch":40800,
+"JoinRandom":43784,
+"proposeStake":72258,
+"acceptStake":56611,
+"payStake":48550,
+"registerMerkleRoot":51086,
+"attackOpponent":40521,"
+accuseOpponent":44909}
+ */
+
 
 
